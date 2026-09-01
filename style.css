@@ -5198,12 +5198,52 @@ main { flex: 1 0 auto; width: 100%; }
     box-shadow: var(--shadow-gold, 0 8px 32px rgba(212, 175, 55, 0.2));
     transform: translateY(-3px);
 }
-/* Картинка справа — текст слева (по умолчанию) */
-.news-alt-card .news-alt-text { order: 1; }
-.news-alt-card .news-alt-img { order: 2; }
-/* Чередование: картинка слева — текст справа */
-.news-alt-card.reverse .news-alt-text { order: 2; }
-.news-alt-card.reverse .news-alt-img { order: 1; }
+/* ============ НОВОСТИ: ТЕКСТ 65% / ОБЛОЖКА 35% (обложки уменьшены ~в 3.5 раза) ============ */
+.news-alt-card,
+.news-alt-card.reverse {
+    grid-template-columns: 65% 35% !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    align-items: stretch;
+    overflow: hidden;
+}
+/* reverse: обложка слева 35%, текст справа 65%
+   (порядок элементов в DOM задан прямо в HTML: обложка ПЕРЕД текстом) */
+.news-alt-card.reverse {
+    grid-template-columns: 35% 65% !important;
+}
+.news-alt-card .news-alt-img,
+.news-alt-card.reverse .news-alt-img {
+    width: 100%;
+    height: 100%;
+    max-height: 220px;          /* обложка больше не растягивается на 600+px */
+    min-height: 0;
+    aspect-ratio: auto;
+    align-self: center;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.3);
+}
+.news-alt-card .news-alt-img img,
+.news-alt-card.reverse .news-alt-img img {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    object-position: center top;
+    transform: none !important;  /* убираем scale(1.35) */
+    transition: transform 0.6s ease;
+    border-radius: 6px;
+    display: block;
+}
+.news-alt-card:hover .news-alt-img img,
+.news-alt-card.reverse:hover .news-alt-img img {
+    transform: scale(1.06) !important;
+}
+.news-alt-card .news-alt-text,
+.news-alt-card.reverse .news-alt-text {
+    padding: 14px 18px;
+    justify-content: center;
+}
 .news-alt-text .tag {
     display: inline-block;
     padding: 4px 12px;
@@ -5243,39 +5283,19 @@ main { flex: 1 0 auto; width: 100%; }
     transition: opacity 0.3s ease;
 }
 .news-alt-text .read-more:hover { opacity: 0.8; }
-.news-alt-img {
-    border-radius: var(--radius-sm, 12px);
-    overflow: hidden;
-    height: 220px;
-    background: rgba(0, 0, 0, 0.3);
-}
-.news-alt-img img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* всегда вписываем целиком */
-    display: block;
-    transform: scale(1.35); /* изначально увеличена — обрезается контейнером */
-    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.8s ease;
-}
-/* При наведении плавно уменьшаем до полного размера — видна вся обложка */
-.news-alt-card:hover .news-alt-img img {
-    transform: scale(1);
-    filter: brightness(1.05);
-}
-/* Адаптивность */
 @media (max-width: 768px) {
-    .news-alt-card {
-        grid-template-columns: 1fr 1fr; /* сохраняем Desktop-структуру: картинка + текст */
-        gap: 12px;
-        padding: 12px;
-    }
-    .news-alt-card .news-alt-text,
-    .news-alt-card.reverse .news-alt-text { order: 1; }
     .news-alt-card .news-alt-img,
-    .news-alt-card.reverse .news-alt-img { order: 2; }
-    .news-alt-img { height: 140px; }
+    .news-alt-card.reverse .news-alt-img { max-height: 160px; }
+    .news-alt-card .news-alt-text,
+    .news-alt-card.reverse .news-alt-text { padding: 10px 12px; }
     .news-alt-text h4 { font-size: 15px; }
     .news-alt-text p { font-size: 11px; }
+}
+@media (max-width: 480px) {
+    .news-alt-card .news-alt-img,
+    .news-alt-card.reverse .news-alt-img { max-height: 140px; }
+    .news-alt-card .news-alt-img img,
+    .news-alt-card.reverse .news-alt-img img { border-radius: 4px; }
 }
 
 /* ================================================================
@@ -5627,38 +5647,5 @@ body, .header, .footer, .section, .page, .modal-content,
     .header-lang-btn { font-size: 8px; padding: 3px 5px; }
     .nav-auth-pair .na-btn { font-size: 8px; padding: 3px 5px; }
     .catalog-grid { grid-template-columns: repeat(5, 1fr); gap: 3px; }
-}
-
-/* Обложки «Популярные игры» — 35% у ВСЕХ статей (включая reverse) */
-@media (max-width: 1280px) {
-    .news-alt-card,
-    .news-alt-card.reverse {
-        grid-template-columns: 35% 65%;
-        align-items: stretch;
-        gap: 0;
-        padding: 0;
-        overflow: hidden;
-    }
-    .news-alt-card .news-alt-img,
-    .news-alt-card.reverse .news-alt-img {
-        width: 100%;
-        height: 100%;
-        min-height: 0;
-        align-self: stretch;
-        display: flex;
-        aspect-ratio: auto;
-    }
-    .news-alt-card .news-alt-img img,
-    .news-alt-card.reverse .news-alt-img img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
-    }
-    .news-alt-card .news-alt-text,
-    .news-alt-card.reverse .news-alt-text {
-        padding: 10px 12px;
-        justify-content: center;
-    }
 }
 
