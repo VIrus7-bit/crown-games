@@ -164,12 +164,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function acceptCookies() {
     document.getElementById('cookieBanner').classList.remove('show');
     localStorage.setItem('cookiesAccepted', 'true');
-    showToast(t('toast_cookies_saved'));
+    showToast('Спасибо! Настройки сохранены.');
 }
 function declineCookies() {
     document.getElementById('cookieBanner').classList.remove('show');
     localStorage.setItem('cookiesAccepted', 'false');
-    showToast(t('toast_cookies_declined'));
+    showToast('Вы отклонили использование cookie.');
 }
 if (!localStorage.getItem('cookiesAccepted')) {
     setTimeout(() => {
@@ -191,7 +191,7 @@ function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('customTheme', theme);
     document.getElementById('themeCustomizer').classList.remove('show');
-    showToast(t('toast_theme_changed') + theme.charAt(0).toUpperCase() + theme.slice(1));
+    showToast(`🎨 Тема изменена на ${theme.charAt(0).toUpperCase() + theme.slice(1)}`);
 }
 if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-theme');
 const savedTheme = localStorage.getItem('customTheme');
@@ -323,7 +323,7 @@ if (burgerBtn) {
 /** Голосовой поиск на странице «Игры» — заполняет поиск каталога */
 function gamesVoiceSearch() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        showToast(t('toast_voice_unsupported'));
+        showToast('❌ Голосовой поиск не поддерживается');
         return;
     }
     try {
@@ -333,7 +333,7 @@ function gamesVoiceSearch() {
         rec.continuous = false;
         rec.interimResults = false;
         rec.onstart = function() {
-            showToast(t('toast_listening'));
+            showToast('🎤 Слушаю...');
         };
         rec.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
@@ -342,17 +342,17 @@ function gamesVoiceSearch() {
                 input.value = transcript;
                 filterGamesSearch(transcript);
             }
-            showToast(t('toast_searching') + transcript + '"');
+            showToast(`🔊 Поиск: "${transcript}"`);
         };
         rec.onerror = function() {
-            showToast(t('toast_voice_failed'));
+            showToast('❌ Не удалось распознать речь');
         };
         rec.onend = function() {
             // ничего не делаем при завершении
         };
         rec.start();
     } catch(e) {
-        showToast(t('toast_mic_error'));
+        showToast('⚠️ Ошибка доступа к микрофону');
     }
 }
 window.gamesVoiceSearch = gamesVoiceSearch;
@@ -412,11 +412,11 @@ function sendMessage() {
     container.scrollTop = container.scrollHeight;
     setTimeout(() => {
         const botMsgs = [
-            t('chat_bot_1'),
-            t('chat_bot_2'),
-            t('chat_bot_3'),
-            t('chat_bot_4'),
-            t('chat_bot_5')
+            'Спасибо за сообщение! Чем ещё могу помочь?',
+            'Отличный вопрос! Давайте разберёмся.',
+            'Я всегда рад помочь вам!',
+            'Сейчас уточню информацию для вас.',
+            'Выберите интересующую вас тему, и я помогу.'
         ];
         const reply = botMsgs[Math.floor(Math.random() * botMsgs.length)];
         container.innerHTML += `<div class="msg bot">${reply}<span class="time">${new Date().toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })}</span></div>`;
@@ -440,13 +440,13 @@ function toggleFav(el) {
         favorites.splice(idx, 1);
         el.classList.remove('active');
         el.textContent = '♡';
-        showToast(t('toast_fav_removed'));
+        showToast('Удалено из избранного');
     } else {
         favorites.push(game);
         el.classList.add('active');
         el.textContent = '♥';
-        showToast(t('toast_fav_added'));
-        addNotification('⭐', t('notif_fav'), t('notif_fav_added_text') + game + '"', 'info');
+        showToast('Добавлено в избранное');
+        addNotification('⭐', 'В избранное!', `Игра "${game}" добавлена в избранное`, 'info');
     }
     localStorage.setItem('favorites', JSON.stringify(favorites));
     updateFavoritesUI();
@@ -574,7 +574,7 @@ Crown Games — Королевская игра
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
-    showToast(t('toast_exported'));
+    showToast('📄 Профиль экспортирован! (TXT-файл)');
 }
 
 // ================================================================
@@ -623,8 +623,6 @@ const translations = {
         'topup_login_ph': 'Введите ваш логин',
         'topup_amount_label': 'Сумма пополнения', 'topup_amount_prefix': 'Получите',
         'fee_progress_text': 'Ещё 1000 ₽ чтобы уменьшить комиссию', 'fee_commission': 'Включая комиссию ~7.4%',
-        'fee_progress_need': 'Ещё {AMOUNT} ₽ чтобы уменьшить комиссию',
-        'fee_progress_min': 'Минимальная комиссия!',
         'quick_sum_label': 'Быстрый выбор суммы',
 
         // Оплата
@@ -806,64 +804,6 @@ const translations = {
         'qr_scan': 'Отсканируйте QR-код в приложении банка',
         'qr_expires': 'Срок действия кода:', 'qr_paid': 'Я оплатил', 'qr_cancel': 'Отмена',
         'chat_title': '💬 Поддержка', 'chat_greeting': '👋 Здравствуйте! Чем я могу вам помочь?',
-        'chat_bot_1': 'Спасибо за сообщение! Чем ещё могу помочь?',
-        'chat_bot_2': 'Отличный вопрос! Давайте разберёмся.',
-        'chat_bot_3': 'Я всегда рад помочь вам!',
-        'chat_bot_4': 'Сейчас уточню информацию для вас.',
-        'chat_bot_5': 'Выберите интересующую вас тему, и я помогу.',
-
-        // Тосты и уведомления
-        'toast_cookies_saved': 'Спасибо! Настройки сохранены.',
-        'toast_cookies_declined': 'Вы отклонили использование cookie.',
-        'toast_theme_changed': '🎨 Тема изменена на ',
-        'toast_voice_unsupported': '❌ Голосовой поиск не поддерживается',
-        'toast_listening': '🎤 Слушаю...',
-        'toast_searching': '🔊 Поиск: "',
-        'toast_voice_failed': '❌ Не удалось распознать речь',
-        'toast_mic_error': '⚠️ Ошибка доступа к микрофону',
-        'toast_fav_removed': 'Удалено из избранного',
-        'toast_fav_added': 'Добавлено в избранное',
-        'notif_fav': 'В избранное!', 'notif_fav_added_text': 'Игра "',
-        'toast_exported': '📄 Профиль экспортирован! (TXT-файл)',
-        'toast_settings_saved': '✅ Настройки сохранены!',
-        'toast_game_not_found': '⚠️ Игра не найдена',
-        'notif_cart': 'Корзина', 'notif_cart_added': ' добавлена за ',
-        'notif_code_sent_title': 'Код подтверждения отправлен',
-        'toast_code_sent': '📧 Код отправлен на ',
-        'toast_pass_short': '❌ Пароль должен быть не короче 6 символов',
-        'toast_reg_success': '✅ Регистрация успешна! Бонус 1000 ₽ начислен',
-        'notif_welcome': 'Добро пожаловать!', 'notif_reg_success': ' успешно зарегистрирован!',
-        'toast_wrong_code': '❌ Неверный код. Проверьте письмо',
-        'toast_wrong_login': '❌ Неверный email или пароль',
-        'toast_welcome_back': '✅ Добро пожаловать, ',
-        'notif_login': 'Вход выполнен', 'notif_login_welcome': 'Рады видеть вас, ',
-        'toast_wrong_code2': '❌ Неверный код подтверждения',
-        'toast_notif_on': '🔔 Уведомления включены!',
-        'notif_notif_on': 'Уведомления включены!', 'notif_notif_on_text': 'Теперь вы будете получать push-уведомления',
-        'toast_notif_off': 'Уведомления отключены.',
-        'toast_link_copied': '📋 Ссылка скопирована!',
-        'notif_link_copied': 'Ссылка скопирована!', 'notif_link_copied_text': 'Реферальная ссылка скопирована в буфер обмена',
-        'toast_contact_sent': 'Ваше сообщение отправлено! Мы свяжемся с вами в ближайшее время.',
-        'notif_contact': 'Сообщение отправлено!', 'notif_contact_text': 'Мы свяжемся с вами в ближайшее время',
-        'toast_pwa_install': '📱 Установка приложения...',
-        'notif_pwa': 'Установка PWA', 'notif_pwa_text': 'Приложение Crown Games устанавливается...',
-        'toast_amount_zero': '⚠️ Введите сумму больше 0',
-        'toast_login_empty': '⚠️ Введите логин аккаунта',
-        'toast_topup_created': '✅ Заявка на пополнение ',
-        'notif_topup': 'Пополнение сервисов', 'notif_topup_text': 'Заявка на ',
-        'toast_login_steam': '⚠️ Введите логин аккаунта Steam',
-        'toast_agree_offer': '⚠️ Подтвердите согласие с офертой об оказании услуг',
-        'toast_agree_rules': '⚠️ Подтвердите, что ознакомлены с правилами оплаты и условиями возврата',
-        'toast_pay_created': '✅ Заявка на оплату создана (',
-        'notif_pay': 'Оплата', 'notif_pay_text': 'Заявка на оплату принята',
-        'toast_card_num': '⚠️ Введите корректный номер карты (16 цифр)',
-        'toast_card_expiry': '⚠️ Введите срок действия карты (ММ/ГГ)',
-        'toast_card_cvv': '⚠️ Введите CVV-код (3 цифры)',
-        'toast_card_holder': '⚠️ Введите имя держателя карты',
-        'toast_pay_ok': '✅ Оплата картой на сумму ',
-        'notif_card_pay': 'Оплата картой', 'notif_card_pay_text': 'Платёж ',
-        'toast_pay_ok_post': 'прошла успешно!',
-        'notif_card_pay_text_post': 'подтверждён',
 
         // Кнопка темы
         'theme_toggle_title': 'Тёмная/светлая тема', 'theme_customize_title': 'Сменить тему',
@@ -908,8 +848,6 @@ const translations = {
         'topup_login_ph': 'Enter your login',
         'topup_amount_label': 'Top-up amount', 'topup_amount_prefix': 'You get',
         'fee_progress_text': 'Another 1000 ₽ to reduce commission', 'fee_commission': 'Including commission ~7.4%',
-        'fee_progress_need': 'Another {AMOUNT} ₽ to reduce commission',
-        'fee_progress_min': 'Minimum commission!',
         'quick_sum_label': 'Quick amount selection',
 
         // Payment
@@ -1013,7 +951,7 @@ const translations = {
 
         // Profile
         'profile_breadcrumb': 'Profile', 'profile_name': 'Player', 'profile_level': 'Level 12',
-        'profile_online': 'Online', 'profile_online_dot': 'Online',
+        'profile_online': 'Online',
         'profile_overview': 'Overview', 'profile_country': 'Country', 'profile_country_val': '🇷🇺 Russia',
         'profile_reg': 'Registered', 'profile_reg_val': 'March 15, 2024',
         'profile_steam_level': 'Steam Level', 'profile_time': 'Time in games', 'profile_hours': '342 h',
@@ -1091,64 +1029,6 @@ const translations = {
         'qr_scan': 'Scan the QR code in your bank app',
         'qr_expires': 'Code expires in:', 'qr_paid': 'I paid', 'qr_cancel': 'Cancel',
         'chat_title': '💬 Support', 'chat_greeting': '👋 Hello! How can I help you?',
-        'chat_bot_1': 'Thank you for your message! How else can I help?',
-        'chat_bot_2': 'Great question! Let me look into it.',
-        'chat_bot_3': 'I am always happy to help you!',
-        'chat_bot_4': 'Let me check that for you.',
-        'chat_bot_5': 'Choose a topic you are interested in, and I will help.',
-
-        // Toasts and notifications
-        'toast_cookies_saved': 'Thank you! Settings saved.',
-        'toast_cookies_declined': 'You declined cookies.',
-        'toast_theme_changed': '🎨 Theme changed to ',
-        'toast_voice_unsupported': '❌ Voice search not supported',
-        'toast_listening': '🎤 Listening...',
-        'toast_searching': '🔊 Searching: "',
-        'toast_voice_failed': '❌ Speech not recognized',
-        'toast_mic_error': '⚠️ Microphone access error',
-        'toast_fav_removed': 'Removed from favorites',
-        'toast_fav_added': 'Added to favorites',
-        'notif_fav': 'Favorites!', 'notif_fav_added_text': 'Game "',
-        'toast_exported': '📄 Profile exported! (TXT file)',
-        'toast_settings_saved': '✅ Settings saved!',
-        'toast_game_not_found': '⚠️ Game not found',
-        'notif_cart': 'Cart', 'notif_cart_added': ' added for ',
-        'notif_code_sent_title': 'Confirmation code sent',
-        'toast_code_sent': '📧 Code sent to ',
-        'toast_pass_short': '❌ Password must be at least 6 characters',
-        'toast_reg_success': '✅ Registration successful! 1000 ₽ bonus credited',
-        'notif_welcome': 'Welcome!', 'notif_reg_success': ' registered successfully!',
-        'toast_wrong_code': '❌ Wrong code. Check your email',
-        'toast_wrong_login': '❌ Wrong email or password',
-        'toast_welcome_back': '✅ Welcome back, ',
-        'notif_login': 'Login successful', 'notif_login_welcome': 'Glad to see you, ',
-        'toast_wrong_code2': '❌ Wrong confirmation code',
-        'toast_notif_on': '🔔 Notifications enabled!',
-        'notif_notif_on': 'Notifications enabled!', 'notif_notif_on_text': 'You will now receive push notifications',
-        'toast_notif_off': 'Notifications disabled.',
-        'toast_link_copied': '📋 Link copied!',
-        'notif_link_copied': 'Link copied!', 'notif_link_copied_text': 'Referral link copied to clipboard',
-        'toast_contact_sent': 'Your message has been sent! We will contact you shortly.',
-        'notif_contact': 'Message sent!', 'notif_contact_text': 'We will contact you shortly',
-        'toast_pwa_install': '📱 Installing the app...',
-        'notif_pwa': 'PWA Installation', 'notif_pwa_text': 'Crown Games is installing...',
-        'toast_amount_zero': '⚠️ Enter an amount greater than 0',
-        'toast_login_empty': '⚠️ Enter account login',
-        'toast_topup_created': '✅ Top-up request for ',
-        'notif_topup': 'Service top-up', 'notif_topup_text': 'Request for ',
-        'toast_login_steam': '⚠️ Enter your Steam account login',
-        'toast_agree_offer': '⚠️ Confirm your agreement with the service offer',
-        'toast_agree_rules': '⚠️ Confirm that you have read the payment rules and refund terms',
-        'toast_pay_created': '✅ Payment request created (',
-        'notif_pay': 'Payment', 'notif_pay_text': 'Payment request accepted',
-        'toast_card_num': '⚠️ Enter a valid card number (16 digits)',
-        'toast_card_expiry': '⚠️ Enter card expiry date (MM/YY)',
-        'toast_card_cvv': '⚠️ Enter CVV code (3 digits)',
-        'toast_card_holder': '⚠️ Enter card holder name',
-        'toast_pay_ok': '✅ Card payment for ',
-        'notif_card_pay': 'Card payment', 'notif_card_pay_text': 'Payment ',
-        'toast_pay_ok_post': ' completed successfully!',
-        'notif_card_pay_text_post': ' confirmed',
 
         // Theme button
         'theme_toggle_title': 'Dark/light theme', 'theme_customize_title': 'Change theme',
@@ -1193,8 +1073,6 @@ const translations = {
         'topup_login_ph': '请输入您的登录名',
         'topup_amount_label': '充值金额', 'topup_amount_prefix': '您获得',
         'fee_progress_text': '再充 1000 ₽ 以减少手续费', 'fee_commission': '含手续费 ~7.4%',
-        'fee_progress_need': '再充 {AMOUNT} ₽ 以减少手续费',
-        'fee_progress_min': '最低手续费！',
         'quick_sum_label': '快速选择金额',
 
         // 支付
@@ -1298,7 +1176,7 @@ const translations = {
 
         // 个人资料
         'profile_breadcrumb': '个人资料', 'profile_name': '玩家', 'profile_level': '12级',
-        'profile_online': '在线', 'profile_online_dot': '在线',
+        'profile_online': '在线',
         'profile_overview': '概览', 'profile_country': '国家', 'profile_country_val': '🇷🇺 俄罗斯',
         'profile_reg': '注册日期', 'profile_reg_val': '2024年3月15日',
         'profile_steam_level': 'Steam等级', 'profile_time': '游戏时间', 'profile_hours': '342小时',
@@ -1376,64 +1254,6 @@ const translations = {
         'qr_scan': '在银行应用中扫描二维码',
         'qr_expires': '验证码有效期：', 'qr_paid': '我已支付', 'qr_cancel': '取消',
         'chat_title': '💬 支持', 'chat_greeting': '👋 您好！我能帮您什么？',
-        'chat_bot_1': '感谢您的留言！还有什么可以帮您的？',
-        'chat_bot_2': '好问题！让我查一下。',
-        'chat_bot_3': '我很乐意帮助您！',
-        'chat_bot_4': '让我为您查一下这个信息。',
-        'chat_bot_5': '选择您感兴趣的主题，我会帮助您。',
-
-        // 通知消息
-        'toast_cookies_saved': '谢谢！设置已保存。',
-        'toast_cookies_declined': '您已拒绝Cookie。',
-        'toast_theme_changed': '🎨 主题已更改为 ',
-        'toast_voice_unsupported': '❌ 不支持语音搜索',
-        'toast_listening': '🎤 正在聆听...',
-        'toast_searching': '🔊 搜索："',
-        'toast_voice_failed': '❌ 无法识别语音',
-        'toast_mic_error': '⚠️ 麦克风访问错误',
-        'toast_fav_removed': '已从收藏中移除',
-        'toast_fav_added': '已添加到收藏',
-        'notif_fav': '收藏！', 'notif_fav_added_text': '游戏"',
-        'toast_exported': '📄 个人资料已导出！（TXT文件）',
-        'toast_settings_saved': '✅ 设置已保存！',
-        'toast_game_not_found': '⚠️ 未找到游戏',
-        'notif_cart': '购物车', 'notif_cart_added': ' 已添加，价格 ',
-        'notif_code_sent_title': '验证码已发送',
-        'toast_code_sent': '📧 验证码已发送至 ',
-        'toast_pass_short': '❌ 密码长度至少6个字符',
-        'toast_reg_success': '✅ 注册成功！已获得1000 ₽奖励',
-        'notif_welcome': '欢迎！', 'notif_reg_success': ' 注册成功！',
-        'toast_wrong_code': '❌ 验证码错误。请检查邮箱',
-        'toast_wrong_login': '❌ 邮箱或密码错误',
-        'toast_welcome_back': '✅ 欢迎回来，',
-        'notif_login': '登录成功', 'notif_login_welcome': '很高兴见到您，',
-        'toast_wrong_code2': '❌ 验证码错误',
-        'toast_notif_on': '🔔 通知已开启！',
-        'notif_notif_on': '通知已开启！', 'notif_notif_on_text': '您现在将收到推送通知',
-        'toast_notif_off': '通知已关闭。',
-        'toast_link_copied': '📋 链接已复制！',
-        'notif_link_copied': '链接已复制！', 'notif_link_copied_text': '推荐链接已复制到剪贴板',
-        'toast_contact_sent': '您的消息已发送！我们会尽快与您联系。',
-        'notif_contact': '消息已发送！', 'notif_contact_text': '我们会尽快与您联系',
-        'toast_pwa_install': '📱 正在安装应用...',
-        'notif_pwa': 'PWA安装', 'notif_pwa_text': 'Crown Games正在安装...',
-        'toast_amount_zero': '⚠️ 请输入大于0的金额',
-        'toast_login_empty': '⚠️ 请输入账户登录名',
-        'toast_topup_created': '✅ 充值请求已创建 ',
-        'notif_topup': '服务充值', 'notif_topup_text': '请求 ',
-        'toast_login_steam': '⚠️ 请输入您的Steam登录名',
-        'toast_agree_offer': '⚠️ 请确认您同意服务协议',
-        'toast_agree_rules': '⚠️ 请确认您已阅读支付规则和退款条款',
-        'toast_pay_created': '✅ 支付请求已创建（',
-        'notif_pay': '支付', 'notif_pay_text': '支付请求已接受',
-        'toast_card_num': '⚠️ 请输入有效的卡号（16位数字）',
-        'toast_card_expiry': '⚠️ 请输入卡有效期（MM/YY）',
-        'toast_card_cvv': '⚠️ 请输入CVV码（3位数字）',
-        'toast_card_holder': '⚠️ 请输入持卡人姓名',
-        'toast_pay_ok': '✅ 银行卡支付 ',
-        'notif_card_pay': '银行卡支付', 'notif_card_pay_text': '支付 ',
-        'toast_pay_ok_post': ' 成功完成！',
-        'notif_card_pay_text_post': ' 已确认',
 
         // 主题按钮
         'theme_toggle_title': '深色/浅色主题', 'theme_customize_title': '更换主题',
@@ -1496,7 +1316,7 @@ function saveSettings() {
     setLanguage(lang);
     localStorage.setItem('profileName', name);
     localStorage.setItem('profileEmail', email);
-    showToast(t('toast_settings_saved'));
+    showToast('✅ Настройки сохранены!');
 }
 document.addEventListener('DOMContentLoaded', function() {
     const savedName = localStorage.getItem('profileName');
@@ -1528,7 +1348,7 @@ function playGame(gameName) {
 // ================================================================
 function buyGame(gameName) {
     const game = GAMES.find(g => g.name === gameName);
-    if (!game) { showToast(t('toast_game_not_found')); return; }
+    if (!game) { showToast('⚠️ Игра не найдена'); return; }
     const idx = GAMES.indexOf(game);
     const p = gamePrice(game, idx);
     const priceStr = p.discount > 0
@@ -1538,7 +1358,7 @@ function buyGame(gameName) {
     const info = document.getElementById('buyModalInfo');
     if (info) info.innerHTML = `<strong>${game.name}</strong><br>${priceStr}`;
     openModal('buyModal');
-    addNotification('🛒', t('notif_cart'), `"${game.name}"${t('notif_cart_added')}${priceStr}`, 'info');
+    addNotification('🛒', 'Корзина', `"${game.name}" добавлена за ${priceStr}`, 'info');
 }
 
 // ================================================================
@@ -1578,7 +1398,7 @@ function generateAndSendCode(email, mode) {
     console.log(`📧 [EMAIL SENT] To: ${email} — Ваш код подтверждения: ${pendingCode}`);
     console.log(`[DEBUG] Код подтверждения для ${mode}: ${pendingCode}`);
     // Показываем код в уведомлении и toast, чтобы пользователь мог его прочитать
-    addNotification('📧', t('notif_code_sent_title'),
+    addNotification('📧', 'Код подтверждения отправлен',
         `На ${email} отправлен 6-значный код.\n\nВаш код: ${pendingCode}`, 'info');
     // Показываем код прямо в модальном окне рядом с полем ввода
     const counterEl = mode === 'входа' ? document.getElementById('loginCodeCounter') : document.getElementById('regCodeCounter');
@@ -1596,7 +1416,7 @@ function registerStep1(e) {
     const email = document.getElementById('regEmail').value;
     const password = document.getElementById('regPassword').value;
     if (password.length < 6) {
-        showToast(t('toast_pass_short'));
+        showToast('❌ Пароль должен быть не короче 6 символов');
         return;
     }
     // Сохраняем данные пользователя для шага 2
@@ -1621,12 +1441,12 @@ function registerStep2(e) {
         localStorage.setItem('crownBalance', '1000');
         showToast(`✅ Регистрация успешна! Бонус 1000 ₽ начислен`);
         createConfetti();
-        addNotification('🎉', t('notif_welcome'), `${u.name}${t('notif_reg_success')}`);
+        addNotification('🎉', 'Добро пожаловать!', `Игрок ${u.name} успешно зарегистрирован!`);
         pendingCode = null;
         closeModal('registerModal');
         resetAuthModals();
     } else {
-        showToast(t('toast_wrong_code'));
+        showToast('❌ Неверный код. Проверьте письмо');
     }
 }
 function registerResendCode() {
@@ -1661,7 +1481,7 @@ function loginStep1(e) {
         document.getElementById('loginFormStep2').style.display = 'block';
         document.getElementById('loginCodeInput').focus();
     } else {
-        showToast(t('toast_wrong_login'));
+        showToast('❌ Неверный email или пароль');
     }
 }
 function loginStep2(e) {
@@ -1674,14 +1494,14 @@ function loginStep2(e) {
         if (user) {
             localStorage.setItem('crownCurrentUser', JSON.stringify(user));
             showToast(`✅ Добро пожаловать, ${user.name}!`);
-            addNotification('👑', t('notif_login'), `${t('notif_login_welcome')}${user.name}!`);
+            addNotification('👑', 'Вход выполнен', `Рады видеть вас, ${user.name}!`);
             createConfetti();
             pendingCode = null;
             closeModal('loginModal');
             resetAuthModals();
         }
     } else {
-        showToast(t('toast_wrong_code2'));
+        showToast('❌ Неверный код подтверждения');
     }
 }
 function loginResendCode() {
@@ -1736,9 +1556,9 @@ function enableNotifications() {
             localStorage.setItem('notifPermission', perm);
             document.getElementById('notifPermission').classList.remove('show');
             if (notificationPermission) {
-                showToast(t('toast_notif_on'));
-                sendPushNotification(t('toast_notif_on') + ' ');
-                addNotification('🔔', t('notif_notif_on'), t('notif_notif_on_text'), 'bonus');
+                showToast('🔔 Уведомления включены!');
+                sendPushNotification('Вы будете получать уведомления о выигрышах и бонусах!');
+                addNotification('🔔', 'Уведомления включены!', 'Теперь вы будете получать push-уведомления', 'bonus');
             }
         });
     }
@@ -1746,7 +1566,7 @@ function enableNotifications() {
 function denyNotifications() {
     localStorage.setItem('notifPermission', 'denied');
     document.getElementById('notifPermission').classList.remove('show');
-    showToast(t('toast_notif_off'));
+    showToast('Уведомления отключены.');
 }
 function sendPushNotification(text) {
     if (notificationPermission && 'Notification' in window) {
@@ -1766,8 +1586,8 @@ function copyRefLink() {
     const input = document.getElementById('refLink');
     input.select();
     document.execCommand('copy');
-    showToast(t('toast_link_copied'));
-    addNotification('📋', t('notif_link_copied'), t('notif_link_copied_text'), 'info');
+    showToast('📋 Ссылка скопирована!');
+    addNotification('📋', 'Ссылка скопирована!', 'Реферальная ссылка скопирована в буфер обмена', 'info');
 }
 
 // ================================================================
@@ -1783,11 +1603,8 @@ function closeModalOutside(e, id) { if (e.target === e.currentTarget) closeModal
 let toastTimeout;
 function showToast(text, title = 'Уведомление') {
     const toast = document.getElementById('toast');
-    // Если передан ключ/фраза из словаря — показываем перевод, иначе оригинал
-    const translated = t(text) !== null ? t(text) : text;
-    const translatedTitle = t(title) !== null ? t(title) : title;
-    document.getElementById('toastTitle').textContent = translatedTitle;
-    document.getElementById('toastText').textContent = translated;
+    document.getElementById('toastTitle').textContent = title;
+    document.getElementById('toastText').textContent = text;
     toast.classList.add('show');
     clearTimeout(toastTimeout);
     toastTimeout = setTimeout(() => toast.classList.remove('show'), 3500);
@@ -1898,8 +1715,8 @@ function renderAchievements() {
 // ================================================================
 function submitContact(e) {
     e.preventDefault();
-    showToast(t('toast_contact_sent'));
-    addNotification('📧', t('notif_contact'), t('notif_contact_text'), 'info');
+    showToast('Ваше сообщение отправлено! Мы свяжемся с вами в ближайшее время.');
+    addNotification('📧', 'Сообщение отправлено!', 'Мы свяжемся с вами в ближайшее время', 'info');
     e.target.reset();
 }
 
@@ -1943,8 +1760,8 @@ function dismissPWA() {
     localStorage.setItem('pwaDismissed', 'true');
 }
 function installPWA() {
-    showToast(t('toast_pwa_install'));
-    addNotification('📱', t('notif_pwa'), t('notif_pwa_text'), 'info');
+    showToast('📱 Установка приложения...');
+    addNotification('📱', 'Установка PWA', 'Приложение Crown Games устанавливается...', 'info');
     dismissPWA();
 }
 if ('serviceWorker' in navigator) {
@@ -2003,13 +1820,13 @@ function gameImg(g) {
   return IMG_BASE + g.img;
 }
 
-/** Возвращает перевод по ключу для текущего языка (null если нет перевода) */
+/** Возвращает перевод по ключу для текущего языка (fallback на русский) */
 function t(key) {
   const lang = translations[currentLanguage] ? currentLanguage : 'ru';
   const val = translations[lang][key];
   if (val !== undefined) return val;
   const ru = translations.ru[key];
-  return ru !== undefined ? ru : null;
+  return ru !== undefined ? ru : key;
 }
 
 /** Уникальное описание игры на основе жанра и названия (переводится) */
@@ -2590,9 +2407,9 @@ function updateFeeProgress(amount) {
     const nextTier = amount < 2000 ? 2000 : amount < 3000 ? 3000 : amount < 5000 ? 5000 : amount < 7500 ? 7500 : amount < 15000 ? 15000 : 0;
     if (nextTier > 0) {
       const need = nextTier - amount;
-      labelEl.innerHTML = (t('fee_progress_need') || 'Ещё {AMOUNT} ₽ чтобы уменьшить комиссию').replace('{AMOUNT}', need);
+      labelEl.innerHTML = 'Ещё ' + need + ' ₽ чтобы уменьшить комиссию';
     } else {
-      labelEl.innerHTML = t('fee_progress_min') || 'Минимальная комиссия!';
+      labelEl.innerHTML = 'Минимальная комиссия!';
     }
   }
 }
@@ -2605,16 +2422,16 @@ function submitTopup() {
   const amount = parseFloat(amountEl.value) || 0;
   const login = loginEl.value.trim();
   if (amount <= 0) {
-    showToast(t('toast_amount_zero'));
+    showToast('⚠️ Введите сумму больше 0');
     return;
   }
   if (!login) {
-    showToast(t('toast_login_empty'));
+    showToast('⚠️ Введите логин аккаунта');
     return;
   }
   const total = Math.round(amount * (1 + TOPUP_COMMISSION));
-  showToast(t('toast_topup_created') + total + ' ₽!');
-  addNotification('💳', t('notif_topup'), t('notif_topup_text') + total + ' ₽ для "' + login + '" принята', 'bonus');
+  showToast(`✅ Заявка на пополнение ${total} ₽ создана!`);
+  addNotification('💳', 'Пополнение сервисов', `Заявка на ${total} ₽ для "${login}" принята`, 'bonus');
 }
 
 /** Инициализация блока пополнения */
@@ -2741,7 +2558,7 @@ function submitPayment() {
   // Проверка логина
   const loginEl = document.getElementById('topupLogin');
   if (!loginEl || !loginEl.value.trim()) {
-    showToast(t('toast_login_steam'));
+    showToast('⚠️ Введите логин аккаунта Steam');
     if (loginEl) {
       loginEl.focus();
       loginEl.classList.add('input-error');
@@ -2759,11 +2576,11 @@ function submitPayment() {
   const rules = document.getElementById('legalRules');
   const promo = document.getElementById('payPromo');
   if (agree && !agree.checked) {
-    showToast(t('toast_agree_offer'));
+    showToast('⚠️ Подтвердите согласие с офертой об оказании услуг');
     return;
   }
   if (rules && !rules.checked) {
-    showToast(t('toast_agree_rules'));
+    showToast('⚠️ Подтвердите, что ознакомлены с правилами оплаты и условиями возврата');
     return;
   }
   const method = getSelectedPayMethod();
@@ -2778,8 +2595,8 @@ function submitPayment() {
     return;
   }
   const promoText = promo && promo.value ? promo.value.trim() : 'без промокода';
-  showToast(t('toast_pay_created') + promoText + ')');
-  addNotification('💳', t('notif_pay'), t('notif_pay_text'), 'bonus');
+  showToast('✅ Заявка на оплату создана (' + promoText + ')');
+  addNotification('💳', 'Оплата', 'Заявка на оплату принята', 'bonus');
 }
 
 /** Открыть окно оплаты через СБП с QR-кодом */
@@ -2939,30 +2756,30 @@ function processCardPayment() {
   const holder = document.getElementById('cardHolder');
   // Валидация
   if (!num || num.value.replace(/\s/g, '').length !== 16) {
-    showToast(t('toast_card_num'));
+    showToast('⚠️ Введите корректный номер карты (16 цифр)');
     if (num) num.focus();
     return;
   }
   if (!exp || exp.value.length !== 5) {
-    showToast(t('toast_card_expiry'));
+    showToast('⚠️ Введите срок действия карты (ММ/ГГ)');
     if (exp) exp.focus();
     return;
   }
   if (!cvv || cvv.value.length !== 3) {
-    showToast(t('toast_card_cvv'));
+    showToast('⚠️ Введите CVV-код (3 цифры)');
     if (cvv) cvv.focus();
     return;
   }
   if (!holder || !holder.value.trim()) {
-    showToast(t('toast_card_holder'));
+    showToast('⚠️ Введите имя держателя карты');
     if (holder) holder.focus();
     return;
   }
   const totalEl = document.getElementById('cardPayTotal');
   const total = totalEl ? totalEl.textContent : '0 ₽';
   closeModal('cardPaymentModal');
-  showToast(t('toast_pay_ok') + total + ' ' + t('toast_pay_ok_post'));
-  addNotification('💳', t('notif_card_pay'), t('notif_card_pay_text') + total + ' ' + t('notif_card_pay_text_post'), 'bonus');
+  showToast(`✅ Оплата картой на сумму ${total} прошла успешно!`);
+  addNotification('💳', 'Оплата картой', `Платёж ${total} подтверждён`, 'bonus');
   createConfetti();
 }
 window.processCardPayment = processCardPayment;
@@ -3011,12 +2828,18 @@ if (document.readyState === 'loading') {
 function initResponsiveScale() {
   function applyScale() {
     const width = window.innerWidth;
-    // Масштабирование только для мобильных (планшеты и телефоны)
-    if (width > 820) return;
-    // Базовый масштаб: на 375px = 1, на 320px = 0.85, на 250px = 0.66 и т.д.
-    // Чем меньше ширина — тем сильнее уменьшаем, чтобы всё вмещалось
-    const scale = Math.min(1, width / 375);
-    // Применяем масштаб к корневому элементу (уменьшается всё содержимое)
+    // Масштабирование только для мобильных/планшетов (<= 900px)
+    if (width > 900) {
+      document.documentElement.style.zoom = '100%';
+      return;
+    }
+    // Плавное уменьшение масштаба от 100% до 50%:
+    //   на 900px  -> 100%
+    //   на 650px  ->  75%
+    //   на 450px  ->  50%
+    //   <= 450px  ->  50% (не ниже)
+    // Линейная формула: scale = width / 900, ограничено [0.5, 1]
+    const scale = Math.max(0.5, Math.min(1, width / 900));
     document.documentElement.style.zoom = (scale * 100) + '%';
   }
   // Применяем сразу и при изменении размера окна

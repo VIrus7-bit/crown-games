@@ -3756,24 +3756,22 @@ body::after {
     --shadow-gold: 0 8px 32px rgba(15, 82, 186, 0.22);
 }
 
-/* Светлая тема — кремовый фон, тёмный контрастный текст */
+/* Светлая тема — светлый фон, тёмный текст */
 body.light-theme {
-    --bg-main: #f7f2e9;
-    --bg-dark: #efe8da;
-    --bg-card: rgba(255, 252, 246, 0.85);
-    --text-main: #1c1a15;
-    --text-muted: rgba(28, 26, 21, 0.88);
-    --text-light: rgba(28, 26, 21, 0.72);
-    --glass-bg: rgba(255, 252, 246, 0.75);
-    --glass-border: rgba(28, 26, 21, 0.28);
-    --glass-highlight: rgba(255, 255, 255, 0.9);
-    --gold-dark: #8a6a1f;
-    --border-gold: rgba(138, 106, 31, 0.35);
-    --shadow-gold: 0 8px 32px rgba(120, 90, 20, 0.14);
+    --bg-main: #f3f2ef;
+    --bg-dark: #e6e4e0;
+    --bg-card: rgba(255, 255, 255, 0.7);
+    --text-main: #17150f;
+    --text-muted: rgba(30, 29, 26, 0.78);
+    --text-light: rgba(30, 29, 26, 0.58);
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(30, 29, 26, 0.2);
+    --glass-highlight: rgba(255, 255, 255, 0.8);
+    --gold-dark: #9a7a2f;
 }
 body.light-theme { background: var(--bg-main); }
-body.light-theme .section-dark { background: rgba(239, 232, 218, 0.65); }
-body.light-theme .footer { background: rgba(239, 232, 218, 0.95); }
+body.light-theme .section-dark { background: rgba(230, 228, 224, 0.6); }
+body.light-theme .footer { background: rgba(230, 228, 224, 0.9); }
 body.light-theme .footer * { color: #1e1d1a; }
 body.light-theme .game-card .card-overlay {
     background: linear-gradient(to top, rgba(30, 29, 26, 0.8) 0%, transparent 70%);
@@ -3786,27 +3784,27 @@ body.light-theme .section-header p,
 body.light-theme .feature-text h2,
 body.light-theme .about-text h1,
 body.light-theme .about-text p,
-body.light-theme h2, body.light-theme h3, body.light-theme h4 { color: #201d16; }
+body.light-theme h2, body.light-theme h3, body.light-theme h4 { color: #17150f; }
 body.light-theme p,
 body.light-theme li,
 body.light-theme .card-sub,
 body.light-theme .stat-label,
-body.light-theme .section-header .see-all { color: rgba(32, 29, 22, 0.9); }
+body.light-theme .section-header .see-all { color: rgba(30, 29, 26, 0.8); }
 body.light-theme .breadcrumbs,
 body.light-theme .breadcrumbs a,
-body.light-theme .breadcrumbs .current { color: rgba(32, 29, 22, 0.92); }
+body.light-theme .breadcrumbs .current { color: rgba(30, 29, 26, 0.85); }
 body.light-theme .feature-text .badge { color: var(--gold-dark); }
 /* Надписи на тёмных фонах остаются светлыми */
-body.light-theme .section-dark .section-header h2 { color: #201d16; }
+body.light-theme .section-dark .section-header h2 { color: #17150f; }
 body.light-theme .game-card .card-title,
 body.light-theme .game-card .card-sub,
 body.light-theme .catalog-item > h4 { color: #fff; }
 /* Кнопки и формы — контраст */
 body.light-theme input,
 body.light-theme select,
-body.light-theme textarea { color: #201d16; background: rgba(255,253,248,0.95); border-color: var(--glass-border); }
+body.light-theme textarea { color: #17150f; background: rgba(255,255,255,0.85); }
 body.light-theme input::placeholder,
-body.light-theme textarea::placeholder { color: rgba(32,29,22,0.62); }
+body.light-theme textarea::placeholder { color: rgba(30,29,26,0.5); }
 body.light-theme .pay-note,
 body.light-theme .legal-item,
 body.light-theme .pay-legal span,
@@ -3814,224 +3812,10 @@ body.light-theme .topup-label,
 body.light-theme label { color: #1e1d1a; }
 body.light-theme .topup-commission,
 body.light-theme .fee-progress-label,
-body.light-theme .pay-warning { color: rgba(32,29,22,0.9); }
-body.light-theme .modal-content { background: rgba(255, 252, 246, 0.98); }
+body.light-theme .pay-warning { color: rgba(30,29,26,0.8); }
+body.light-theme .modal-content { background: rgba(240, 239, 236, 0.97); }
 body.light-theme .modal-content h3,
-body.light-theme .modal-content p { color: #201d16; }
-/* Кремовые карточки и стеклянные панели — видимые границы */
-body.light-theme .stat-card::before,
-body.light-theme .profile-card,
-body.light-theme .vip-card,
-body.light-theme .promo-card,
-body.light-theme .blog-card,
-body.light-theme .value-card,
-body.light-theme .about-text,
-body.light-theme .feature-article { border-color: rgba(28, 26, 21, 0.22); box-shadow: 0 8px 28px rgba(90, 70, 30, 0.10); }
-/* Тултипы на светлом фоне — тёмные с белым текстом */
-body.light-theme .game-tooltip { background: rgba(20, 18, 14, 0.94); color: rgba(255,255,255,0.9); }
-/* Золотые кнопки остаются читаемыми */
-body.light-theme .btn-gold { color: #fff; }
-body.light-theme .btn-secondary { color: #201d16; border-color: rgba(28,26,21,0.35); }
-/* ================================================================
-   7.1. СВЕТЛАЯ ТЕМА — ДОПОЛНИТЕЛЬНЫЕ ЭЛЕМЕНТЫ
-   ================================================================ */
-/* Хедер */
-body.light-theme .header { background: rgba(247, 242, 233, 0.88); border-bottom-color: rgba(28,26,21,0.15); }
-body.light-theme .header.header-scrolled { background: rgba(247, 242, 233, 0.97); box-shadow: 0 4px 30px rgba(90,70,30,0.10); }
-body.light-theme .header .logo { color: #8a6a1f; }
-body.light-theme .header .logo span { color: #201d16; }
-body.light-theme .header .nav a { color: rgba(32,29,22,0.78); }
-body.light-theme .header .nav a:hover,
-body.light-theme .header .nav a.active { color: #201d16; }
-body.light-theme .header-theme-toggle { color: #8a6a1f; border-color: rgba(28,26,21,0.25); }
-body.light-theme .header-lang-btn { color: rgba(32,29,22,0.8); border-color: rgba(28,26,21,0.25); }
-body.light-theme .header-lang-dropdown { background: rgba(255,253,248,0.97); border-color: rgba(28,26,21,0.2); }
-body.light-theme .header-lang-dropdown button { color: rgba(32,29,22,0.85); }
-body.light-theme .header-lang-dropdown button:hover { background: rgba(138,106,31,0.12); }
-body.light-theme .header-lang-dropdown button.active { color: #8a6a1f; }
-body.light-theme .na-btn { color: rgba(32,29,22,0.85); }
-body.light-theme .na-btn.na-register { background: linear-gradient(135deg, #b8942e, #8a6a1f); color: #fff; }
-/* Чат-виджет */
-body.light-theme .chat-widget .chat-button { background: rgba(255,253,248,0.9); border-color: rgba(28,26,21,0.25); color: #8a6a1f; }
-body.light-theme .chat-widget .chat-window { background: rgba(255,253,248,0.96); border-color: rgba(28,26,21,0.22); }
-body.light-theme .chat-widget .chat-window .chat-header h4 { color: #201d16; }
-body.light-theme .chat-widget .chat-window .chat-input-wrap input { background: rgba(247,242,233,0.7); border-color: rgba(28,26,21,0.2); color: #201d16; }
-body.light-theme .chat-widget .chat-window .chat-messages .msg.bot { background: rgba(247,242,233,0.8); border-color: rgba(28,26,21,0.15); color: #201d16; }
-body.light-theme .chat-widget .chat-window .chat-messages .msg .time { color: rgba(32,29,22,0.55); }
-/* Toast */
-body.light-theme .toast { background: rgba(255,253,248,0.95); border-color: rgba(28,26,21,0.22); }
-body.light-theme .toast .toast-title { color: #201d16; }
-body.light-theme .toast .toast-text { color: rgba(32,29,22,0.82); }
-/* PWA-баннер */
-body.light-theme .pwa-banner { background: rgba(255,253,248,0.95); border-color: rgba(28,26,21,0.22); }
-body.light-theme .pwa-banner .pwa-text { color: rgba(32,29,22,0.82); }
-body.light-theme .pwa-banner .pwa-text strong { color: #8a6a1f; }
-body.light-theme .pwa-banner .pwa-close { color: rgba(32,29,22,0.55); }
-/* Cookie-баннер */
-body.light-theme .cookie-banner { background: rgba(255,253,248,0.95); border-color: rgba(28,26,21,0.22); }
-body.light-theme .cookie-banner p { color: rgba(32,29,22,0.82); }
-body.light-theme .cookie-banner .cookie-decline { color: rgba(32,29,22,0.75); border-color: rgba(28,26,21,0.3); }
-/* Баннер уведомлений */
-body.light-theme .notif-permission { background: rgba(255,253,248,0.95); border-color: rgba(28,26,21,0.22); }
-body.light-theme .notif-permission p { color: rgba(32,29,22,0.82); }
-/* Скелетон-лоадер */
-body.light-theme #skeletonLoader { background: var(--bg-main); }
-body.light-theme #skeletonLoader .loader-text { color: #201d16; }
-body.light-theme #skeletonLoader .loader-sub { color: rgba(32,29,22,0.7); }
-/* Кнопка наверх и тумблер темы */
-body.light-theme .scroll-top { background: rgba(255,253,248,0.85); border-color: rgba(28,26,21,0.25); color: #8a6a1f; }
-body.light-theme .theme-toggle { background: rgba(255,253,248,0.85); border-color: rgba(28,26,21,0.25); color: #8a6a1f; }
-body.light-theme .theme-customizer { background: rgba(255,253,248,0.95); border-color: rgba(28,26,21,0.22); }
-body.light-theme .theme-customizer .theme-label { color: rgba(32,29,22,0.8); }
-/* Уведомления */
-body.light-theme .notification-item { background: rgba(255,253,248,0.92); border-color: rgba(28,26,21,0.2); }
-body.light-theme .notification-item .notif-title { color: #8a6a1f; }
-body.light-theme .notification-item .notif-text { color: rgba(32,29,22,0.8); }
-body.light-theme .notification-item .notif-close { color: rgba(32,29,22,0.55); }
-/* VIP-карточки */
-body.light-theme .vip-card { background: rgba(255,253,248,0.8); border-color: rgba(28,26,21,0.2); }
-body.light-theme .vip-card .level-label { color: #201d16; }
-body.light-theme .vip-card .vip-price { color: #8a6a1f; }
-body.light-theme .vip-card ul li { color: rgba(32,29,22,0.85); }
-body.light-theme .vip-card-featured { border-color: #b8942e; background: rgba(255,253,248,0.95); }
-body.light-theme .vip-progress { background: rgba(28,26,21,0.12); }
-/* Промо-карточки */
-body.light-theme .promo-card { background: rgba(255,253,248,0.75); border-color: rgba(28,26,21,0.2); }
-body.light-theme .promo-card .promo-body h4 { color: #201d16; }
-body.light-theme .promo-card .promo-body p { color: rgba(32,29,22,0.82); }
-body.light-theme .promo-card .promo-body .tag { color: #8a6a1f; }
-body.light-theme .promo-card .timer { background: rgba(255,253,248,0.9); color: #201d16; }
-/* Новости и гайд */
-body.light-theme .news-alt-card { border-color: rgba(28,26,21,0.18); }
-body.light-theme .news-alt-card .tag { color: #8a6a1f; }
-body.light-theme .news-alt-card h4 { color: #201d16; }
-body.light-theme .news-alt-card p { color: rgba(32,29,22,0.82); }
-body.light-theme .news-alt-card .read-more { color: #8a6a1f; }
-body.light-theme .news-alt-card .date { color: rgba(32,29,22,0.6); }
-body.light-theme .feature-article { background: rgba(255,253,248,0.55); }
-body.light-theme .feature-list li { color: rgba(32,29,22,0.85); }
-/* О нас */
-body.light-theme .values-grid .value-card { background: rgba(255,253,248,0.7); border-color: rgba(28,26,21,0.18); }
-body.light-theme .values-grid .value-card h4 { color: #201d16; }
-body.light-theme .values-grid .value-card p { color: rgba(32,29,22,0.8); }
-body.light-theme .contact-info-item { color: rgba(32,29,22,0.82); }
-body.light-theme .form-box { border-color: rgba(28,26,21,0.18); background: rgba(255,253,248,0.6); }
-body.light-theme .form-box h4 { color: #201d16; }
-body.light-theme .about-image .sub { color: rgba(32,29,22,0.7); }
-/* Футер */
-body.light-theme .footer-col h4 { color: #201d16; }
-body.light-theme .footer-col a { color: rgba(32,29,22,0.78); }
-body.light-theme .footer-col p { color: rgba(32,29,22,0.82); }
-body.light-theme .footer-bottom { border-top-color: rgba(28,26,21,0.15); }
-/* Steam-пополнение */
-body.light-theme .steam-banner { background: rgba(255,253,248,0.6); border-color: rgba(28,26,21,0.18); }
-body.light-theme .steam-banner .steam-banner-text strong { color: #201d16; }
-body.light-theme .steam-banner .steam-banner-text span { color: rgba(32,29,22,0.75); }
-body.light-theme .steam-banner-stats .stat-num { color: #8a6a1f; }
-body.light-theme .steam-banner-stats .stat-label { color: rgba(32,29,22,0.7); }
-body.light-theme .topup-form .topup-login { background: rgba(255,253,248,0.9); color: #201d16; border-color: rgba(28,26,21,0.25); }
-body.light-theme .topup-form .topup-amount { background: rgba(255,253,248,0.9); color: #201d16; border-color: rgba(28,26,21,0.25); }
-body.light-theme .topup-form .topup-currency { background: rgba(255,253,248,0.9); color: #201d16; border-color: rgba(28,26,21,0.25); }
-body.light-theme .pay-section { background: rgba(255,253,248,0.5); border-color: rgba(28,26,21,0.18); }
-body.light-theme .pay-method { background: rgba(255,253,248,0.7); border-color: rgba(28,26,21,0.2); color: rgba(32,29,22,0.8); }
-body.light-theme .pay-method.active { background: linear-gradient(135deg, #b8942e, #8a6a1f); color: #fff; border-color: #8a6a1f; }
-body.light-theme .pay-summary .pay-sum-row span { color: rgba(32,29,22,0.82); }
-body.light-theme .pay-summary .pay-sum-row.total span { color: #201d16; }
-body.light-theme .quick-sum { background: rgba(255,253,248,0.7); border-color: rgba(28,26,21,0.2); color: rgba(32,29,22,0.8); }
-body.light-theme .quick-sum:hover { background: rgba(138,106,31,0.12); border-color: #8a6a1f; color: #201d16; }
-body.light-theme .topup-section { border-color: rgba(28,26,21,0.18); }
-body.light-theme .region-tab { color: rgba(32,29,22,0.7); border-color: rgba(28,26,21,0.2); }
-body.light-theme .region-tab.active { color: #8a6a1f; border-color: #8a6a1f; }
-body.light-theme .fx-rate { color: rgba(32,29,22,0.7); }
-body.light-theme .fx-rate b { color: #201d16; }
-body.light-theme .discount-badge { color: #4a8c3f; }
-body.light-theme .fee-progress { background: rgba(28,26,21,0.1); }
-body.light-theme .fee-progress-fill { background: linear-gradient(90deg, #b8942e, #8a6a1f); }
-body.light-theme .fee-pct { color: #201d16; }
-body.light-theme .topup-hint { color: #8a6a1f; }
-/* Профиль */
-body.light-theme .profile-banner-bg { background: linear-gradient(135deg, #efe8da, #f7f2e9); }
-body.light-theme .profile-name { color: #201d16; }
-body.light-theme .profile-level { color: rgba(32,29,22,0.8); }
-body.light-theme .profile-status { color: rgba(32,29,22,0.8); }
-body.light-theme .profile-meta .meta-label { color: rgba(32,29,22,0.7); }
-body.light-theme .profile-meta .meta-value { color: #201d16; }
-body.light-theme .profile-tab { color: rgba(32,29,22,0.7); border-color: rgba(28,26,21,0.2); }
-body.light-theme .profile-tab.active { color: #8a6a1f; border-bottom-color: #8a6a1f; }
-body.light-theme .activity-title { color: rgba(32,29,22,0.85); }
-body.light-theme .activity-time { color: rgba(32,29,22,0.6); }
-body.light-theme .player-stat-card { background: rgba(255,253,248,0.6); border-color: rgba(28,26,21,0.18); }
-body.light-theme .player-stat-card .stat-label { color: rgba(32,29,22,0.7); }
-body.light-theme .player-stat-card .stat-value { color: #201d16; }
-body.light-theme .lib-game-card { border-color: rgba(28,26,21,0.18); background: rgba(255,253,248,0.6); }
-body.light-theme .lib-game-card .lib-game-name { color: #201d16; }
-body.light-theme .lib-game-card .lib-game-cat { color: rgba(32,29,22,0.65); }
-body.light-theme .lib-game-card .lib-game-hours { color: rgba(32,29,22,0.6); }
-/* Поиск */
-body.light-theme .search-wrap { border-color: rgba(28,26,21,0.25); }
-body.light-theme .search-wrap .search-input { color: #201d16; }
-body.light-theme .search-wrap .search-input::placeholder { color: rgba(32,29,22,0.55); }
-body.light-theme .search-results { background: rgba(255,253,248,0.97); border-color: rgba(28,26,21,0.2); }
-body.light-theme .search-results .result-item { border-color: rgba(28,26,21,0.12); }
-body.light-theme .search-results .result-item .info h4 { color: #201d16; }
-body.light-theme .search-results .result-item .search-cat { color: rgba(32,29,22,0.6); }
-body.light-theme .search-results .empty-result { color: rgba(32,29,22,0.6); }
-/* Голосовой поиск */
-body.light-theme .voice-recording-indicator { background: rgba(255,253,248,0.95); border-color: rgba(28,26,21,0.2); }
-body.light-theme .voice-recording-indicator .text { color: rgba(32,29,22,0.8); }
-/* Карточки слайдера */
-body.light-theme .game-card .rank { color: rgba(32,29,22,0.6); }
-body.light-theme .game-card .rank.gold { color: #8a6a1f; }
-body.light-theme .game-card .card-fav { color: rgba(32,29,22,0.5); }
-body.light-theme .game-card .card-fav.active { color: #e8455b; }
-/* Цены */
-body.light-theme .price-current { color: #201d16; }
-body.light-theme .price-original { color: rgba(32,29,22,0.5); }
-body.light-theme .price-discount { color: #fff; background: #4a8c3f; }
-/* Affiliate */
-body.light-theme .affiliate-box { border-color: rgba(28,26,21,0.18); background: rgba(255,253,248,0.55); }
-body.light-theme .affiliate-box .subtitle { color: rgba(32,29,22,0.82); }
-body.light-theme .affiliate-stats .stat .label { color: rgba(32,29,22,0.7); }
-body.light-theme .affiliate-stats .stat .num { color: #201d16; }
-body.light-theme .affiliate-features .feature .name { color: #201d16; }
-body.light-theme .affiliate-features .feature .desc { color: rgba(32,29,22,0.7); }
-body.light-theme .ref-link input { background: rgba(255,253,248,0.9); border-color: rgba(28,26,21,0.25); color: #201d16; }
-body.light-theme .ref-link button { color: #8a6a1f; }
-/* Steam-помощь */
-body.light-theme .steam-help-list li { color: rgba(32,29,22,0.85); }
-body.light-theme .steam-help-screenshot { color: rgba(32,29,22,0.7); }
-/* Оплата картой */
-body.light-theme .card-display { background: linear-gradient(135deg, #e8e0d0, #d4caba); }
-body.light-theme .card-secure-notice { color: rgba(32,29,22,0.7); }
-body.light-theme .card-pay-summary span { color: #201d16; }
-body.light-theme .card-pay-summary .card-pay-total { color: #8a6a1f; }
-body.light-theme .card-input-group label { color: rgba(32,29,22,0.85); }
-/* QR-оплата */
-body.light-theme .qr-code-box { border-color: rgba(28,26,21,0.2); }
-body.light-theme .qr-amount { color: #201d16; }
-body.light-theme .qr-amount-detail { color: rgba(32,29,22,0.7); }
-body.light-theme .qr-cell.dark { background: #201d16; }
-body.light-theme .qr-cell { background: rgba(255,253,248,0.8); border-color: rgba(28,26,21,0.1); }
-/* Hero */
-body.light-theme .hero-text .badge { color: #8a6a1f; border-color: rgba(138,106,31,0.3); }
-body.light-theme .hero-text h1 { color: #201d16; }
-body.light-theme .hero-text p { color: rgba(32,29,22,0.85); }
-body.light-theme .hero-game-card .hero-game-caption { color: #201d16; }
-/* Авторизация */
-body.light-theme .auth-switch-tabs button { color: rgba(32,29,22,0.7); border-color: rgba(28,26,21,0.2); }
-body.light-theme .auth-switch-tabs button.active { color: #8a6a1f; border-bottom-color: #8a6a1f; }
-body.light-theme .btn-close-modal { color: #fff; background: linear-gradient(135deg, #b8942e, #8a6a1f); }
-body.light-theme .btn-close-modal:hover { box-shadow: 0 4px 20px rgba(138,106,31,0.3); }
-/* Прочее */
-body.light-theme .char-counter { color: rgba(32,29,22,0.55); }
-body.light-theme .char-counter.danger { color: #e8455b; }
-body.light-theme .see-all { color: #8a6a1f; }
-body.light-theme .section-header .see-all { color: #8a6a1f; }
-body.light-theme .badge-item .badge-name { color: #201d16; }
-body.light-theme .badge-item .badge-desc { color: rgba(32,29,22,0.7); }
-body.light-theme .badge-item .badge-quest { color: rgba(32,29,22,0.6); }
-body.light-theme .badges-grid .badge-item { border-color: rgba(28,26,21,0.18); background: rgba(255,253,248,0.6); }
-body.light-theme .player-stats-grid .player-stat-card { background: rgba(255,253,248,0.6); }
+body.light-theme .modal-content p { color: #17150f; }
 
 /* ================================================================
    8. СТАТ-КАРТЫ — АНИМАЦИЯ «ШАРДОВ» (осколки собираются вместе)
@@ -4993,7 +4777,7 @@ body.light-theme .player-stats-grid .player-stat-card { background: rgba(255,253
     padding: 3px 9px; border-radius: 20px; border: 1px solid var(--border-gold);
     backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
-body.light-theme .cat-badge { color: #8a6a1f; background: rgba(255,253,248,0.9); border-color: rgba(138,106,31,0.4); }
+body.light-theme .cat-badge { color: var(--gold-dark); background: rgba(255,255,255,0.7); }
 
 /* Всплывающая подсказка у топовых карточек игр */
 .game-tooltip {
@@ -5025,10 +4809,6 @@ body.light-theme .cat-badge { color: #8a6a1f; background: rgba(255,253,248,0.9);
 }
 .catalog-item .catalog-fav { z-index: 6; }
 body.light-theme .catalog-item > h4 { color: #fff; }
-body.light-theme .catalog-item .catalog-rating { background: rgba(20,18,14,0.7); color: #b8942e; }
-body.light-theme .catalog-filters button { color: rgba(32,29,22,0.8); border-color: rgba(28,26,21,0.25); }
-body.light-theme .catalog-filters button.active { color: #fff; background: linear-gradient(135deg, #b8942e, #8a6a1f); border-color: #8a6a1f; }
-body.light-theme .catalog-filters button:hover { color: #201d16; border-color: rgba(28,26,21,0.45); }
 
 /* hero-game-card base (на случай если subagent не добавил) */
 .hero-games { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
