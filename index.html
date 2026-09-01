@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crown — Премиальный магазин игр</title>
+    <title>Crown Games — Магазин игр и пополнение Steam</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👑</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -49,11 +50,16 @@
     </div>
 
     <!-- Theme Toggle -->
-    <button class="theme-toggle" onclick="toggleThemeCustomizer()" title="Сменить тему">
-        <span class="dark-icon"></span>
-        <span class="light-icon">☀️</span>
+    <button class="theme-toggle" onclick="toggleThemeCustomizer()" title="Сменить тему" aria-label="Сменить тему">
+        <svg class="theme-ico palette-ico" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1-.23-.27-.38-.62-.38-1.02 0-.79.64-1.43 1.43-1.43H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+        </svg>
     </button>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Тёмная/светлая тема" style="bottom: 155px;">🎨</button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Тёмная/светлая тема" style="bottom: 155px;" aria-label="Переключить тему">
+        <svg class="theme-ico sun-moon-ico" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
+        </svg>
+    </button>
 
     <!-- Theme Customizer -->
     <div class="theme-customizer" id="themeCustomizer">
@@ -80,9 +86,12 @@
 
     <!-- Skeleton Loader -->
     <div id="skeletonLoader">
-        <div class="spinner"></div>
-        <div class="loader-text">CROWN CASINO</div>
+        <div class="loader-logo">
+            <span class="crown">👑</span>
+        </div>
+        <div class="loader-text">CROWN <span>GAMES</span></div>
         <div class="loader-bar"><div class="fill"></div></div>
+        <div class="loader-sub">Загружаем игровую вселенную...</div>
     </div>
 
     <!-- Confetti Canvas -->
@@ -106,10 +115,17 @@
                     <a data-page="home" onclick="navigateTo('home')">Главная</a>
                     <a data-page="games" onclick="navigateTo('games')">Игры</a>
                     <a data-page="vip" onclick="navigateTo('vip')">VIP</a>
-                    <a data-page="blog" onclick="navigateTo('blog')">Блог</a>
+                    <a data-page="blog" onclick="goToNews()">Блог</a>
                     <a data-page="affiliate" onclick="navigateTo('affiliate')">Партнёры</a>
                     <a data-page="profile" onclick="navigateTo('profile')">Профиль</a>
                     <a data-page="about" onclick="navigateTo('about')">О нас</a>
+                    <div class="lang-select">
+                        <a class="lang-btn" onclick="toggleLangDropdown(event)" title="Сменить язык">🌐 <span id="langLabel">RU</span> ▾</a>
+                        <div class="lang-dropdown" id="langDropdown">
+                            <button class="active" onclick="setLang('ru', event)">🇷🇺 Русский (RU)</button>
+                            <button onclick="setLang('en', event)">🇬🇧 English (EN)</button>
+                        </div>
+                    </div>
                 </nav>
             </div>
             <div class="header-right">
@@ -123,33 +139,6 @@
             </button>
         </div>
     </header>
-
-    <!-- Cart Overlay -->
-    <div class="cart-overlay" id="cartOverlay" onclick="closeCartOutside(event)">
-        <div class="cart-panel">
-            <div class="cart-header">
-                <h3>Ваша <span>корзина</span></h3>
-                <button class="cart-close" onclick="closeCart()"></button>
-            </div>
-            <div class="cart-body" id="cartBody">
-                <div class="cart-empty">
-                    <div class="empty-icon">🛒</div>
-                    <p>Корзина пуста</p>
-                    <p style="font-size:13px;color:var(--text-light);margin-top:4px;">Добавьте игры, чтобы начать</p>
-                </div>
-            </div>
-            <div class="cart-footer" id="cartFooter" style="display:none;">
-                <div class="cart-total">
-                    <span class="total-label">Итого:</span>
-                    <span class="total-price" id="cartTotal">0 ₽</span>
-                </div>
-                <div class="cart-actions">
-                    <button class="btn-secondary" onclick="closeCart()">Продолжить</button>
-                    <button class="btn-gold" onclick="checkout()">Оформить заказ</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Chat Widget -->
     <div class="chat-widget">
@@ -204,23 +193,137 @@
                     </div>
                 </div>
                 <div class="container">
-                    <div class="stats-grid stagger-children">
-                        <div class="stat-card">
-                            <div class="number">1 500+</div>
-                            <div class="label">Игр в каталоге</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="number">60+</div>
-                            <div class="label">Провайдеров</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="number">4.9 ★</div>
-                            <div class="label">Средний рейтинг</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="number">150K+</div>
-                            <div class="label">Активных игроков</div>
-                        </div>
+                    <!-- ПОПОЛНЕНИЕ СЕРВИСОВ + СПОСОБ ОПЛАТЫ (две панели) -->
+                    <div class="topup-wrap">
+                        <!-- Левая панель: Пополнение Steam (60%) -->
+                        <section class="topup-section">
+                            <!-- Синяя плашка Steam с новыми текстами, логотипом и статистикой -->
+                            <div class="steam-banner">
+                                <img class="steam-logo" src="images/steam-logo.png" alt="Steam" width="40" height="40">
+                                <div class="steam-banner-text">
+                                    <strong>Пополни баланс Steam</strong>
+                                    <span>Моментальное пополнение кошелька Стим</span>
+                                </div>
+                                <div class="steam-banner-stats">
+                                    <span class="stat-num" id="refillCounter">0</span>
+                                    <span class="stat-label">пополнений</span>
+                                </div>
+                            </div>
+                            <!-- Форма -->
+                            <div class="topup-form">
+                                <!-- Регион + Текущая скидка + Курсы валют (в одну строку) -->
+                                <div class="topup-row full">
+                                    <div class="topup-meta-row">
+                                        <div class="region-tabs" id="regionTabs">
+                                            <button class="region-tab active" data-region="ru">Россия</button>
+                                            <button class="region-tab" data-region="kz">Казахстан</button>
+                                            <button class="region-tab" data-region="sbp">СПБ</button>
+                                        </div>
+                                        <span class="discount-badge">Текущая скидка: <b>-2%</b></span>
+                                        <div class="fx-rates" id="fxRates">
+                                            <span class="fx-rate">USD <b id="fxUsd">92.5 ₽</b></span>
+                                            <span class="fx-rate">EUR <b id="fxEur">99.8 ₽</b></span>
+                                            <span class="fx-rate">CNY <b id="fxCny">12.8 ₽</b></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="topup-row full">
+                                    <div class="topup-label-row">
+                                        <label class="topup-label">Логин аккаунта</label>
+                                        <a class="topup-hint" href="#" onclick="event.preventDefault();openSteamLoginHelp()">Как узнать логин?</a>
+                                    </div>
+                                    <input type="text" id="topupLogin" class="topup-login tall-field" placeholder="Введите ваш логин">
+                                </div>
+                                <div class="topup-row full">
+                                    <label class="topup-label">Сумма пополнения</label>
+                                    <div class="amount-wrap tall-field">
+                                        <span class="amount-prefix">Получите</span>
+                                        <input type="number" id="topupAmount" class="topup-amount" value="500" min="1" placeholder="500">
+                                        <select id="topupCurrency" class="topup-currency">
+                                            <option value="ru" selected>RU · ₽</option>
+                                            <option value="usd">USD · $</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <!-- Прогресс-бар на всю ширину + комиссия справа -->
+                                <div class="topup-row full">
+                                    <div class="fee-progress-row">
+                                        <div class="fee-progress full-width">
+                                            <div class="fee-progress-label">
+                                                <span>Ещё 1000 ₽ чтобы уменьшить комиссию</span>
+                                                <span class="fee-pct">2%</span>
+                                            </div>
+                                            <div class="fee-progress-bar"><div class="fee-progress-fill" style="width:40%"></div></div>
+                                        </div>
+                                        <div class="topup-commission">Включая комиссию ~7.4%</div>
+                                    </div>
+                                </div>
+                                <div class="topup-row full">
+                                    <label class="topup-label">Быстрый выбор суммы</label>
+                                    <div class="quick-sums">
+                                        <button class="quick-sum" data-amount="500">500 ₽</button>
+                                        <button class="quick-sum" data-amount="1000">1000 ₽</button>
+                                        <button class="quick-sum" data-amount="2500">2500 ₽</button>
+                                        <button class="quick-sum" data-amount="5000">5000 ₽</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Правая панель: Способ оплаты (40%) -->
+                        <section class="pay-section">
+                            <div class="pay-header">
+                                <h2>Способ <span class="gold">оплаты</span></h2>
+                                <p>Выберите удобный метод</p>
+                            </div>
+                            <!-- Выбор способа оплаты -->
+                            <div class="pay-methods" id="payMethods">
+                                <button class="pay-method active" data-method="card">
+                                    <span class="pay-ico">💳</span> Картой
+                                </button>
+                                <button class="pay-method" data-method="sbp">
+                                    <span class="pay-ico">🏦</span> СБП
+                                </button>
+                            </div>
+                            <!-- Итоговая информация -->
+                            <div class="pay-summary">
+                                <div class="pay-sum-row">
+                                    <span>Сумма пополнения</span>
+                                    <span id="paySumAmount">500 ₽</span>
+                                </div>
+                                <div class="pay-sum-row">
+                                    <span>Комиссия сервиса</span>
+                                    <span id="paySumFee">7.4%</span>
+                                </div>
+                                <div class="pay-sum-row total">
+                                    <span>Итого к оплате</span>
+                                    <span id="paySumTotal">537 ₽</span>
+                                </div>
+                            </div>
+                            <!-- Промокод -->
+                            <div class="topup-row">
+                                <label class="topup-label">Промокод</label>
+                                <input type="text" id="payPromo" class="topup-login" placeholder="Введите промокод (если есть)">
+                            </div>
+                            <!-- Предупреждение -->
+                            <div class="pay-warning">
+                                ⚠️ Для успешной оплаты рекомендуем отключить VPN и перезагрузить страницу
+                            </div>
+                            <button class="topup-buy pay-submit" id="paySubmitBtn" onclick="submitPayment()">
+                                Оплатить
+                            </button>
+                            <!-- Соглашение и правила — 2 галочки -->
+                            <div class="pay-legal">
+                                <label class="pay-note legal-item">
+                                    <input type="checkbox" id="payAgree">
+                                    <span id="payAgreeText">Нажимая кнопку «Оплатить», вы соглашаетесь с офертой об оказании услуг</span>
+                                </label>
+                                <label class="pay-legal-warning">
+                                    <input type="checkbox" id="legalRules">
+                                    <span>Я ознакомлен(а) с правилами оплаты, условиями возврата и обработки персональных данных</span>
+                                </label>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>
@@ -234,210 +337,84 @@
                     </div>
                     <div class="games-slider-wrapper">
                         <div class="games-slider-track" id="gamesSliderTrack">
-                            <div class="games-grid">
-                                <div class="game-card" data-game="Counter-Strike 2" onclick="openGameDetail('Counter-Strike 2')">
-                                    <div class="card-fav" data-game="Counter-Strike 2" onclick="event.stopPropagation();toggleFav(this)">♡</div>
-                                    <div class="rank gold">I</div>
-                                    <div class="card-image"><img src="images/games/counter_strike_2.jpg" alt="Counter-Strike 2" loading="lazy"></div>
-                                    <div class="card-overlay">
-                                        <h4 class="card-title">Counter-Strike 2</h4>
-                                        <p class="card-sub">Шутер</p>
-                                    </div>
-                                    <div class="game-tooltip">Тактический шутер №1 в мире</div>
-                                    <button class="btn-play" onclick="event.stopPropagation();playGame('Counter-Strike 2')">▶ Играть</button>
-                                    <button class="btn-demo" onclick="event.stopPropagation();startDemoMode('Counter-Strike 2')">🎮 Демо</button>
-                                </div>
-                                <div class="game-card" data-game="Dota 2" onclick="openGameDetail('Dota 2')">
-                                    <div class="card-fav" data-game="Dota 2" onclick="event.stopPropagation();toggleFav(this)">♡</div>
-                                    <div class="rank">II</div>
-                                    <div class="card-image"><img src="images/games/dota_2.jpg" alt="Dota 2" loading="lazy"></div>
-                                    <div class="card-overlay">
-                                        <h4 class="card-title">Dota 2</h4>
-                                        <p class="card-sub">Стратегия</p>
-                                    </div>
-                                    <div class="game-tooltip">Классическая MOBA</div>
-                                    <button class="btn-play" onclick="event.stopPropagation();playGame('Dota 2')">▶ Играть</button>
-                                    <button class="btn-demo" onclick="event.stopPropagation();startDemoMode('Dota 2')">🎮 Демо</button>
-                                </div>
-                                <div class="game-card" data-game="Elden Ring" onclick="openGameDetail('Elden Ring')">
-                                    <div class="card-fav" data-game="Elden Ring" onclick="event.stopPropagation();toggleFav(this)">♡</div>
-                                    <div class="rank">III</div>
-                                    <div class="card-image"><img src="images/games/elden_ring.jpg" alt="Elden Ring" loading="lazy"></div>
-                                    <div class="card-overlay">
-                                        <h4 class="card-title">Elden Ring</h4>
-                                        <p class="card-sub">RPG</p>
-                                    </div>
-                                    <div class="game-tooltip">Легендарная RPG от FromSoftware</div>
-                                    <button class="btn-play" onclick="event.stopPropagation();playGame('Elden Ring')">▶ Играть</button>
-                                    <button class="btn-demo" onclick="event.stopPropagation();startDemoMode('Elden Ring')">🎮 Демо</button>
-                                </div>
-                                <div class="game-card" data-game="Cyberpunk 2077" onclick="openGameDetail('Cyberpunk 2077')">
-                                    <div class="card-fav" data-game="Cyberpunk 2077" onclick="event.stopPropagation();toggleFav(this)">♡</div>
-                                    <div class="rank">IV</div>
-                                    <div class="card-image"><img src="images/games/cyberpunk_2077.jpg" alt="Cyberpunk 2077" loading="lazy"></div>
-                                    <div class="card-overlay">
-                                        <h4 class="card-title">Cyberpunk 2077</h4>
-                                        <p class="card-sub">RPG</p>
-                                    </div>
-                                    <div class="game-tooltip">Мир Найт-Сити ждёт вас</div>
-                                    <button class="btn-play" onclick="event.stopPropagation();playGame('Cyberpunk 2077')">▶ Играть</button>
-                                    <button class="btn-demo" onclick="event.stopPropagation();startDemoMode('Cyberpunk 2077')">🎮 Демо</button>
-                                </div>
-                                <div class="game-card" data-game="Baldur's Gate 3" onclick="openGameDetail('Baldur\'s Gate 3')">
-                                    <div class="card-fav" data-game="Baldur's Gate 3" onclick="event.stopPropagation();toggleFav(this)">♡</div>
-                                    <div class="rank">V</div>
-                                    <div class="card-image"><img src="images/games/baldurs_gate_3.jpg" alt="Baldur's Gate 3" loading="lazy"></div>
-                                    <div class="card-overlay">
-                                        <h4 class="card-title">Baldur's Gate 3</h4>
-                                        <p class="card-sub">RPG</p>
-                                    </div>
-                                    <div class="game-tooltip">Игра года — легендарная RPG</div>
-                                    <button class="btn-play" onclick="event.stopPropagation();playGame('Baldur\'s Gate 3')">▶ Играть</button>
-                                    <button class="btn-demo" onclick="event.stopPropagation();startDemoMode('Baldur\'s Gate 3')">🎮 Демо</button>
-                                </div>
-                            </div>
+                            <!-- JS рендерит 32 игры (4 слайда по 8) -->
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Popular Games -->
-            <section class="section">
+            <!-- ПОСЛЕДНИЕ НОВОСТИ (чередующийся макет) -->
+            <section class="section" id="newsSection">
                 <div class="container">
                     <div class="section-header">
-                        <h2>Популярные <span class="gold">игры</span></h2>
-                        <a class="see-all" onclick="navigateTo('games')">Смотреть все →</a>
+                        <h2>Блог и <span class="gold">новости</span></h2>
                     </div>
-                    <div class="popular-grid stagger-children">
-                        <div class="popular-card" onclick="openGameDetail('Counter-Strike 2')">
-                            <div class="icon"><img src="images/games/counter_strike_2.jpg" alt="Counter-Strike 2" loading="lazy"></div>
-                            <h4>Counter-Strike 2</h4>
-                            <div class="rating">★★★★★</div>
-                        </div>
-                        <div class="popular-card" onclick="openGameDetail('Dota 2')">
-                            <div class="icon"><img src="images/games/dota_2.jpg" alt="Dota 2" loading="lazy"></div>
-                            <h4>Dota 2</h4>
-                            <div class="rating">★★★★★</div>
-                        </div>
-                        <div class="popular-card" onclick="openGameDetail('Cyberpunk 2077')">
-                            <div class="icon"><img src="images/games/cyberpunk_2077.jpg" alt="Cyberpunk 2077" loading="lazy"></div>
-                            <h4>Cyberpunk 2077</h4>
-                            <div class="rating">★★★★★</div>
-                        </div>
-                        <div class="popular-card" onclick="openGameDetail('Elden Ring')">
-                            <div class="icon"><img src="images/games/elden_ring.jpg" alt="Elden Ring" loading="lazy"></div>
-                            <h4>Elden Ring</h4>
-                            <div class="rating">★★★★★</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Последние покупки (бывшие выигрыши) -->
-            <section class="section section-dark">
-                <div class="container">
-                    <div class="section-header">
-                        <h2>Последние <span class="gold">покупки</span></h2>
-                    </div>
-                    <div class="wins-grid stagger-children">
-                        <div class="win-card">
-                            <div class="win-seal"><img src="images/games/counter_strike_2.jpg" alt="CS2" loading="lazy"></div>
-                            <div class="win-amount">1 240 <span class="currency">₽</span></div>
-                            <div class="win-player"><span class="player-id">KingAce</span></div>
-                            <div class="win-time">5 мин назад</div>
-                        </div>
-                        <div class="win-card">
-                            <div class="win-seal"><img src="images/games/dota_2.jpg" alt="Dota 2" loading="lazy"></div>
-                            <div class="win-amount">845 <span class="currency">₽</span></div>
-                            <div class="win-player"><span class="player-id">LuckyLady</span></div>
-                            <div class="win-time">17 мин назад</div>
-                        </div>
-                        <div class="win-card">
-                            <div class="win-seal"><img src="images/games/cyberpunk_2077.jpg" alt="Cyberpunk" loading="lazy"></div>
-                            <div class="win-amount">2 100 <span class="currency">₽</span></div>
-                            <div class="win-player"><span class="player-id">DiamondHand</span></div>
-                            <div class="win-time">42 мин назад</div>
-                        </div>
-                        <div class="win-card">
-                            <div class="win-seal"><img src="images/games/elden_ring.jpg" alt="Elden Ring" loading="lazy"></div>
-                            <div class="win-amount">670 <span class="currency">₽</span></div>
-                            <div class="win-player"><span class="player-id">FireStorm</span></div>
-                            <div class="win-time">1 ч назад</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- НОВОСТИ ИГРОВОЙ ИНДУСТРИИ -->
-            <section class="section">
-                <div class="container">
-                    <div class="section-header">
-                        <h2>Новости <span class="gold">игровой индустрии</span></h2>
-                        <a class="see-all" onclick="navigateTo('blog')">Все новости →</a>
-                    </div>
-                    <div class="news-grid stagger-children">
-                        <article class="news-card">
-                            <div class="news-image"><img src="images/games/elden_ring.jpg" alt="Elden Ring" loading="lazy"><span class="news-tag">Анонс</span></div>
-                            <div class="news-body">
-                                <div class="news-meta"><span>Игровые новости</span><span class="dot">•</span><span>2 часа назад</span></div>
-                                <h4>Долгожданное дополнение к Elden Ring выходит в этом году</h4>
-                                <p>Разработчики подтвердили расширение мира и новые сложнейшие боссы для поклонников соулслайков.</p>
-                                <a class="read-more" onclick="showToast('Читать новость')">Подробнее →</a>
+                    <div class="news-alt">
+                        <!-- Новость 1: картинка справа -->
+                        <div class="news-alt-card">
+                            <div class="news-alt-text">
+                                <span class="tag">Новинки</span>
+                                <h4>Cyberpunk 2077: масштабное обновление графики</h4>
+                                <p>Трассировка лучей и новые настройки производительности сделали Найт-Сити ещё красивее. Разработчики выпустили крупный патч, который добавляет поддержку DLSS 4, улучшенные отражения и оптимизацию для видеокарт нового поколения. Игроков ждут также исправления багов и новые механики геймплея, которые делают игру ещё более захватывающей. Обновление уже доступно для загрузки на всех платформах.</p>
+                                <div class="date"><span>15 марта 2025</span></div>
+                                <a class="read-more" href="https://store.steampowered.com/app/1091500/Cyberpunk_2077/" target="_blank" rel="noopener noreferrer">Читать далее →</a>
                             </div>
-                        </article>
-                        <article class="news-card">
-                            <div class="news-image"><img src="images/games/cyberpunk_2077.jpg" alt="Cyberpunk 2077" loading="lazy"><span class="news-tag">Обновление</span></div>
-                            <div class="news-body">
-                                <div class="news-meta"><span>Обзоры</span><span class="dot">•</span><span>5 часов назад</span></div>
-                                <h4>Cyberpunk 2077 получил масштабное обновление графики</h4>
-                                <p>Трассировка лучей и новые настройки производительности сделали Найт-Сити ещё красивее.</p>
-                                <a class="read-more" onclick="showToast('Читать новость')">Подробнее →</a>
-                            </div>
-                        </article>
-                        <article class="news-card">
-                            <div class="news-image"><img src="images/games/baldurs_gate_3.jpg" alt="Baldur's Gate 3" loading="lazy"><span class="news-tag">Киберспорт</span></div>
-                            <div class="news-body">
-                                <div class="news-meta"><span>Киберспорт</span><span class="dot">•</span><span>1 день назад</span></div>
-                                <h4>Гранд-финал турнира по Baldur's Gate 3 собрал рекорд зрителей</h4>
-                                <p>Лучшие команды мира разыграли призовой фонд и показали невероятный уровень игры.</p>
-                                <a class="read-more" onclick="showToast('Читать новость')">Подробнее →</a>
-                            </div>
-                        </article>
-                    </div>
-                </div>
-            </section>
-
-            <!-- АКЦИИ И СКИДКИ -->
-            <section class="section">
-                <div class="container">
-                    <div class="section-header">
-                        <h2>Акции и <span class="gold">скидки</span></h2>
-                        <a class="see-all" onclick="showToast('Все акции')">Смотреть все →</a>
-                    </div>
-                    <div class="promo-grid stagger-children">
-                        <div class="promo-card">
-                            <div class="promo-image"><img src="images/games/elden_ring.jpg" alt="Приветственный пакет" style="width:100%;height:100%;object-fit:cover;"><div class="timer">⏱️ 02:14:37</div></div>
-                            <div class="promo-body">
-                                <span class="tag">Новое</span>
-                                <h4>Скидка 20% на первую покупку</h4>
-                                <p>Скидка 20% на первую игру для новых покупателей</p>
-                            </div>
+                            <div class="news-alt-img"><img src="images/games/cyberpunk_2077.jpg" alt="Cyberpunk 2077" loading="lazy"></div>
                         </div>
-                        <div class="promo-card">
-                            <div class="promo-image"><img src="images/games/cyberpunk_2077.jpg" alt="Бонус" style="width:100%;height:100%;object-fit:cover;"><div class="timer">⏱️ 05:32:18</div></div>
-                            <div class="promo-body">
-                                <span class="tag">Бонус</span>
-                                <h4>Бонусные баллы до 25%</h4>
-                                <p>Возвращайте до 25% баллов с каждой покупки</p>
+                        <!-- Новость 2: картинка слева -->
+                        <div class="news-alt-card reverse">
+                            <div class="news-alt-text">
+                                <span class="tag">Киберспорт</span>
+                                <h4>Elden Ring: секреты и гайд по сложным боссам</h4>
+                                <p>Как победить самых сложных боссов Междуземья — проверенные билды и стратегии. В этом гайде мы собрали лучшие советы от профессиональных игроков: какие оружия и заклинания использовать против каждого босса, как правильно распределять очки навыков и в какой последовательности проходить локации. Отдельное внимание уделено сложнейшим боссам дополнения Shadow of the Erdtree.</p>
+                                <div class="date"><span>14 марта 2025</span></div>
+                                <a class="read-more" href="https://store.steampowered.com/app/1245620/ELDEN_RING/" target="_blank" rel="noopener noreferrer">Читать далее →</a>
                             </div>
+                            <div class="news-alt-img"><img src="images/games/elden_ring.jpg" alt="Elden Ring" loading="lazy"></div>
                         </div>
-                        <div class="promo-card">
-                            <div class="promo-image"><img src="images/games/dota_2.jpg" alt="VIP" style="width:100%;height:100%;object-fit:cover;"><div class="timer">⏱️ 12:45:22</div></div>
-                            <div class="promo-body">
-                                <span class="tag">VIP</span>
-                                <h4>Эксклюзивные скидки для VIP</h4>
-                                <p>Персональные предложения и повышенные бонусы</p>
+                        <!-- Новость 3: картинка справа -->
+                        <div class="news-alt-card">
+                            <div class="news-alt-text">
+                                <span class="tag">Стратегии</span>
+                                <h4>Dota 2: мета 2025 и лучшие герои</h4>
+                                <p>Разбор актуальной меты, сильнейшие герои патча и советы по подъёму рейтинга. Новый патч привнёс значительные изменения в баланс: некоторые герои получили усиление, а другие — ослабление. Мы проанализировали статистику матчей высокого ранга и подготовили список самых эффективных героев для каждой позиции, а также стратегии для победы в текущей мете.</p>
+                                <div class="date"><span>12 марта 2025</span></div>
+                                <a class="read-more" href="https://store.steampowered.com/app/570/Dota_2/" target="_blank" rel="noopener noreferrer">Читать далее →</a>
                             </div>
+                            <div class="news-alt-img"><img src="images/games/dota_2.jpg" alt="Dota 2" loading="lazy"></div>
+                        </div>
+                        <!-- Новость 4: картинка слева -->
+                        <div class="news-alt-card reverse">
+                            <div class="news-alt-text">
+                                <span class="tag">Гайд</span>
+                                <h4>Stardew Valley: лучшие фермерские стратегии</h4>
+                                <p>Как быстро разбогатеть, какие культуры выгоднее и секреты общения с жителями. В этом подробном руководстве мы расскажем о самых прибыльных культурах для каждого сезона, лучших способах заработка в первый год игры и секретах быстрого развития фермы. Вы узнаете, как эффективно использовать теплицу, какие животные приносят максимальную прибыль и как подружиться со всеми жителями Пеликан Тауна.</p>
+                                <div class="date"><span>10 марта 2025</span></div>
+                                <a class="read-more" href="https://store.steampowered.com/app/413150/Stardew_Valley/" target="_blank" rel="noopener noreferrer">Читать далее →</a>
+                            </div>
+                            <div class="news-alt-img"><img src="images/games/stardew_valley.jpg" alt="Stardew Valley" loading="lazy"></div>
+                        </div>
+                        <!-- Новость 5: картинка справа -->
+                        <div class="news-alt-card">
+                            <div class="news-alt-text">
+                                <span class="tag">Обзор</span>
+                                <h4>Red Dead Redemption 2: почему это шедевр</h4>
+                                <p>Разбор открытого мира, истории и геймплея самой атмосферной игры последних лет. Red Dead Redemption 2 продолжает удерживать планку лучшей игры в жанре вестерн благодаря невероятному вниманию к деталям, глубокой сюжетной линии и живому миру, который реагирует на каждое действие игрока. Мы разбираем ключевые механики, секреты и пасхалки, которые делают этот мир таким особенным.</p>
+                                <div class="date"><span>8 марта 2025</span></div>
+                                <a class="read-more" href="https://store.steampowered.com/app/1174180/Red_Dead_Redemption_2/" target="_blank" rel="noopener noreferrer">Читать далее →</a>
+                            </div>
+                            <div class="news-alt-img"><img src="images/games/red_dead_redemption_2.jpg" alt="Red Dead Redemption 2" loading="lazy"></div>
+                        </div>
+                        <!-- Новость 6: картинка слева -->
+                        <div class="news-alt-card reverse">
+                            <div class="news-alt-text">
+                                <span class="tag">Советы</span>
+                                <h4>Baldur's Gate 3: гайд по созданию персонажа</h4>
+                                <p>Лучшие классы, расы и билды для новичков и опытных игроков. Создание персонажа в Baldur's Gate 3 — один из самых важных этапов игры. В этом гайде мы разбираем все классы и расы, их сильные и слабые стороны, а также предлагаем оптимальные билды для прохождения на высокой сложности. Вы узнаете, как правильно распределять характеристики и выбирать заклинания для максимальной эффективности.</p>
+                                <div class="date"><span>6 марта 2025</span></div>
+                                <a class="read-more" href="https://store.steampowered.com/app/1086940/Baldurs_Gate_3/" target="_blank" rel="noopener noreferrer">Читать далее →</a>
+                            </div>
+                            <div class="news-alt-img"><img src="images/games/baldurs_gate_3.jpg" alt="Baldur's Gate 3" loading="lazy"></div>
                         </div>
                     </div>
                 </div>
@@ -668,7 +645,7 @@
                     <h2>Зарабатывайте с <span class="gold">Crown</span></h2>
                     <p class="subtitle">Приглашайте друзей и получайте до 30% от их выигрышей навсегда!</p>
                     <div class="ref-link">
-                        <input type="text" id="refLink" value="https://crowncasino.com/ref/user123" readonly>
+                        <input type="text" id="refLink" value="https://crowngames.store/ref/user123" readonly>
                         <button onclick="copyRefLink()">📋</button>
                     </div>
                     <div class="affiliate-stats">
@@ -690,60 +667,132 @@
         <section class="page" id="page-profile">
             <div class="container" style="padding-top:40px;">
                 <div class="breadcrumbs">
-                    <a onclick="navigateTo('home')">Главная</a> / <span class="current">Профиль 👤</span>
+                    <a onclick="navigateTo('home')">Главная</a> / <span class="current">Профиль</span>
                 </div>
-                <div class="profile-grid">
-                    <div class="profile-sidebar">
-                        <div class="avatar">👤</div>
-                        <h3 class="name" id="profileName">Игрок</h3>
-                        <div class="level">⭐ Silver VIP</div>
-                        <div class="stats">
-                            <div class="stat"><div class="num">1 240</div><div class="label">Баллов</div></div>
-                            <div class="stat"><div class="num">12</div><div class="label">Игр сыграно</div></div>
-                        </div>
-                        <div class="badges-preview">
-                            <span class="mini-badge unlocked">🌱</span>
-                            <span class="mini-badge unlocked">🎮</span>
-                            <span class="mini-badge unlocked">🏆</span>
-                            <span class="mini-badge">👑</span>
-                            <span class="mini-badge">⭐</span>
+
+                <!-- Steam-стиль: шапка профиля с баннером -->
+                <div class="steam-profile">
+                    <div class="profile-banner">
+                        <div class="profile-banner-bg"></div>
+                        <div class="profile-banner-content">
+                            <div class="profile-avatar-frame">
+                                <div class="profile-avatar" id="profileAvatar">🕹️</div>
+                            </div>
+                            <div class="profile-head-info">
+                                <h1 class="profile-name" id="profileName">Игрок</h1>
+                                <div class="profile-level">Уровень 12</div>
+                                <div class="profile-xp-bar">
+                                    <div class="xp-fill" style="width:65%"></div>
+                                    <span class="xp-label">1 850 / 2 500 XP</span>
+                                </div>
+                            </div>
+                            <div class="profile-status">
+                                <span class="status-dot online"></span> В сети
+                            </div>
                         </div>
                     </div>
-                    <div class="profile-content">
-                        <div class="tabs">
-                            <button class="active" onclick="switchProfileTab('history', this)">История</button>
-                            <button onclick="switchProfileTab('favorites', this)">Избранное</button>
-                            <button onclick="switchProfileTab('badges', this)">Достижения</button>
-                            <button onclick="switchProfileTab('settings', this)">Настройки</button>
-                        </div>
-                        <div class="tab-content active" id="tab-history">
-                            <h3 style="margin-bottom:16px;">📊 Статистика</h3>
-                            <div class="history-item"><span class="game"> Starburst</span><span class="amount">+500 ₽</span><span class="date">сегодня, 14:32</span></div>
-                            <div class="history-item"><span class="game">📖 Book of Dead</span><span class="amount">-200 ₽</span><span class="date">сегодня, 12:15</span></div>
-                            <div class="history-item"><span class="game">🔥 Gonzo's Quest</span><span class="amount">+1 200 ₽</span><span class="date">вчера, 21:40</span></div>
-                            <div class="history-item"><span class="game">💰 Mega Moolah</span><span class="amount">+5 000 ₽</span><span class="date">вчера, 18:22</span></div>
-                            <div class="history-item"><span class="game">👑 Crown Royale</span><span class="amount">-150 ₽</span><span class="date">2 дня назад, 10:05</span></div>
-                            <button class="btn-secondary" style="margin-top:16px;" onclick="exportProfilePDF()">📄 Экспорт в PDF</button>
-                        </div>
-                        <div class="tab-content" id="tab-favorites">
-                            <div id="favoritesList"><p style="color:var(--text-muted);">Здесь будут ваши избранные игры. Нажмите ♡ на карточке игры, чтобы добавить.</p></div>
-                        </div>
-                        <div class="tab-content" id="tab-badges">
-                            <div class="badges-grid" id="badgesGrid"></div>
-                        </div>
-                        <div class="tab-content" id="tab-settings">
-                            <div class="form-box">
-                                <h4>📊 Статистика игрока</h4>
-                                <div class="player-stats-grid" style="margin-bottom:20px;">
-                                    <div class="player-stat-card"><span class="stat-icon">🎮</span><div class="stat-value">47</div><div class="stat-label">Всего игр</div></div>
-                                    <div class="player-stat-card"><span class="stat-icon">🏆</span><div class="stat-value">23</div><div class="stat-label">Выигрыши</div></div>
-                                    <div class="player-stat-card"><span class="stat-icon">💔</span><div class="stat-value">24</div><div class="stat-label">Проигрыши</div></div>
-                                    <div class="player-stat-card"><span class="stat-icon"></span><div class="stat-value">48.9%</div><div class="stat-label">Процент побед</div></div>
+
+                    <div class="profile-body">
+                        <!-- Левая колонка (Steam-стиль: мини-профиль, друзья, комментарии) -->
+                        <div class="profile-left">
+                            <div class="profile-card">
+                                <h4>Обзор</h4>
+                                <div class="profile-meta">
+                                    <div class="meta-row"><span class="meta-label">Страна</span><span class="meta-value">🇷🇺 Россия</span></div>
+                                    <div class="meta-row"><span class="meta-label">Регистрация</span><span class="meta-value">15 марта 2024</span></div>
+                                    <div class="meta-row"><span class="meta-label">Уровень Steam</span><span class="meta-value"><span class="steam-level-badge">12</span></span></div>
+                                    <div class="meta-row"><span class="meta-label">Время в играх</span><span class="meta-value" id="profileHours">342 ч</span></div>
                                 </div>
-                                <div class="form-group"><label>Имя</label><input type="text" id="settingsName" value="Игрок"></div>
-                                <div class="form-group"><label>Email</label><input type="email" id="settingsEmail" value="player@example.com"></div>
-                                <div class="form-group"><label>Язык</label><select id="languageSelect" style="width:100%;padding:12px 18px;border:1px solid var(--border-gold);border-radius:var(--radius-sm);background:var(--bg-dark);color:var(--text-main);font-family:inherit;font-size:14px;outline:none;"><option value="ru">Русский</option><option value="en">English</option><option value="de">Deutsch</option><option value="es">Español</option></select></div>
-                                <button class="btn-gold" onclick="saveSettings()" style="width:100%;">Сохранить настройки</button>
+                            </div>
+                            <div class="profile-card">
+                                <h4>Библиотека</h4>
+                                <div class="profile-lib-stats">
+                                    <div class="lib-stat"><span class="num" id="profileOwned">12</span><span class="label">игр</span></div>
+                                    <div class="lib-stat"><span class="num">8</span><span class="label">достижений</span></div>
+                                    <div class="lib-stat"><span class="num">65%</span><span class="label">пройдено</span></div>
+                                </div>
+                            </div>
+                            <div class="profile-card">
+                                <h4>Друзья</h4>
+                                <div class="profile-friends">
+                                    <div class="friend-item"><span class="friend-avatar">😎</span><span class="friend-name">GamerPro</span><span class="friend-status online"></span></div>
+                                    <div class="friend-item"><span class="friend-avatar">🤖</span><span class="friend-name">PixelMaster</span><span class="friend-status online"></span></div>
+                                    <div class="friend-item"><span class="friend-avatar">👾</span><span class="friend-name">NeonRider</span><span class="friend-status offline"></span></div>
+                                    <div class="friend-item"><span class="friend-avatar">🦊</span><span class="friend-name">FoxGamer</span><span class="friend-status offline"></span></div>
+                                </div>
+                            </div>
+                            <div class="profile-card">
+                                <h4>Достижения</h4>
+                                <div class="profile-ach-preview">
+                                    <div class="ach-bar"><div class="ach-fill" style="width:65%"></div></div>
+                                    <span class="ach-label">65% из 108 достижений</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Правая колонка с вкладками -->
+                        <div class="profile-right">
+                            <div class="profile-tabs">
+                                <button class="profile-tab active" onclick="switchProfileTab('activity', this)">Активность</button>
+                                <button class="profile-tab" onclick="switchProfileTab('library', this)">Библиотека</button>
+                                <button class="profile-tab" onclick="switchProfileTab('badges', this)">Достижения</button>
+                                <button class="profile-tab" onclick="switchProfileTab('settings', this)">Настройки</button>
+                            </div>
+
+                            <!-- Активность -->
+                            <div class="profile-tab-content active" id="tab-activity">
+                                <div class="activity-list">
+                                    <div class="activity-item">
+                                        <div class="activity-icon">🎮</div>
+                                        <div class="activity-info">
+                                            <span class="activity-title">Играл в <strong>Counter-Strike 2</strong></span>
+                                            <span class="activity-time">сегодня, 14:32</span>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-icon">🏆</div>
+                                        <div class="activity-info">
+                                            <span class="activity-title">Получено достижение в <strong>Dota 2</strong></span>
+                                            <span class="activity-time">сегодня, 12:15</span>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-icon">💰</div>
+                                        <div class="activity-info">
+                                            <span class="activity-title">Куплена игра <strong>Elden Ring</strong></span>
+                                            <span class="activity-time">вчера, 21:40</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Библиотека -->
+                            <div class="profile-tab-content" id="tab-library">
+                                <div class="library-grid" id="profileLibrary">
+                                    <!-- JS подставит игры из каталога -->
+                                </div>
+                            </div>
+
+                            <!-- Достижения -->
+                            <div class="profile-tab-content" id="tab-badges">
+                                <div class="badges-grid" id="badgesGrid"></div>
+                            </div>
+
+                            <!-- Настройки -->
+                            <div class="profile-tab-content" id="tab-settings">
+                                <div class="form-box">
+                                    <h4>📊 Статистика игрока</h4>
+                                    <div class="player-stats-grid" style="margin-bottom:20px;">
+                                        <div class="player-stat-card"><span class="stat-icon">🎮</span><div class="stat-value">47</div><div class="stat-label">Всего игр</div></div>
+                                        <div class="player-stat-card"><span class="stat-icon">⭐</span><div class="stat-value">65%</div><div class="stat-label">Пройдено</div></div>
+                                        <div class="player-stat-card"><span class="stat-icon">🏅</span><div class="stat-value">8</div><div class="stat-label">Достижения</div></div>
+                                        <div class="player-stat-card"><span class="stat-icon">⏱️</span><div class="stat-value">342ч</div><div class="stat-label">В играх</div></div>
+                                    </div>
+                                    <div class="form-group"><label>Имя</label><input type="text" id="settingsName" value="Игрок"></div>
+                                    <div class="form-group"><label>Email</label><input type="email" id="settingsEmail" value="player@example.com"></div>
+                                    <div class="form-group"><label>Язык</label><select id="languageSelect" style="width:100%;padding:12px 18px;border:1px solid var(--border-gold);border-radius:var(--radius-sm);background:var(--bg-dark);color:var(--text-main);font-family:inherit;font-size:14px;outline:none;"><option value="ru">Русский</option><option value="en">English</option><option value="de">Deutsch</option><option value="es">Español</option></select></div>
+                                    <button class="btn-gold" onclick="saveSettings()" style="width:100%;">Сохранить настройки</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -793,16 +842,10 @@
                     </div>
                 </div>
 
-                <!-- Команда -->
+                <!-- Ценности -->
                 <div class="section-header" style="margin-top:50px;">
-                    <h2>Наша <span style="color:var(--gold);">команда</span></h2>
+                    <h2>Наши <span style="color:var(--gold);">ценности</span></h2>
                 </div>
-                <div class="values-grid">
-                    <div class="value-card"><div class="icon">👑</div><h4>Александр Коронов</h4><p>Основатель и CEO</p></div>
-                    <div class="value-card"><div class="icon">🎰</div><h4>Мария Соколова</h4><p>Глава отдела игр</p></div>
-                    <div class="value-card"><div class="icon">🔒</div><h4>Игорь Безопасный</h4><p>Директор по безопасности</p></div>
-                </div>
-
                 <div class="values-grid">
                     <div class="value-card"><div class="icon">🔒</div><h4>Безопасность</h4><p>Современная защита данных</p></div>
                     <div class="value-card"><div class="icon">⚡</div><h4>Скорость</h4><p>Мгновенные выплаты</p></div>
@@ -815,7 +858,7 @@
                 </div>
                 <div class="about-grid">
                     <div>
-                        <div class="contact-info-item"><div class="icon-wrap">📧</div><div><strong>Email</strong><br>support@crowncasino.com</div></div>
+                        <div class="contact-info-item"><div class="icon-wrap">📧</div><div><strong>Email</strong><br>support@crowngames.store</div></div>
                         <div class="contact-info-item" style="margin-top:12px;"><div class="icon-wrap">📞</div><div><strong>Телефон</strong><br>+7 (800) 555-01-01</div></div>
                         <div class="contact-info-item" style="margin-top:12px;"><div class="icon-wrap">💬</div><div><strong>Live-чат</strong><br>Онлайн 24/7</div></div>
                     </div>
@@ -851,7 +894,7 @@
                         <li><a onclick="navigateTo('games')">Игры</a></li>
                         <li><a onclick="navigateTo('promo')">Акции</a></li>
                         <li><a onclick="navigateTo('vip')">VIP</a></li>
-                        <li><a onclick="navigateTo('blog')">Блог</a></li>
+                        <li><a onclick="goToNews()">Блог</a></li>
                         <li><a onclick="navigateTo('affiliate')">Партнёры</a></li>
                     </ul>
                 </div>
@@ -942,6 +985,111 @@
                 </div>
                 <button type="submit" class="btn-close-modal">Зарегистрироваться</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Steam Login Help Modal -->
+    <div class="modal-overlay" id="steamLoginHelpModal" onclick="closeModalOutside(event, 'steamLoginHelpModal')">
+        <div class="modal-content">
+            <button class="modal-close-btn" onclick="closeModal('steamLoginHelpModal')">✕</button>
+            <h3>Как узнать логин <span class="gold">Steam?</span></h3>
+            <p style="color:var(--text-muted);font-size:13px;">Следуйте простой инструкции, чтобы найти свой логин Steam:</p>
+            <ol class="steam-help-list">
+                <li>Откройте приложение Steam или сайт <strong>store.steampowered.com</strong>.</li>
+                <li>Войдите в свой аккаунт.</li>
+                <li>Нажмите на свой логин в правом верхнем углу.</li>
+                <li>В выпадающем меню выберите «О моём аккаунте».</li>
+                <li>Ваш логин отображается в верхней части страницы.</li>
+                <li>Скопируйте логин и вставьте в поле ввода.</li>
+            </ol>
+            <div class="steam-help-screenshot">🖼️ Пример: ваш логин указан в шапке профиля Steam</div>
+            <button class="btn-gold" style="width:100%;margin-top:16px;" onclick="closeModal('steamLoginHelpModal')">Понятно</button>
+        </div>
+    </div>
+
+    <!-- Buy Modal (Steam-стиль) -->
+    <div class="modal-overlay" id="buyModal" onclick="closeModalOutside(event, 'buyModal')">
+        <div class="modal-content" style="max-width:420px;text-align:center;">
+            <button class="modal-close-btn" onclick="closeModal('buyModal')">✕</button>
+            <div style="font-size:48px;margin-bottom:10px;">🛒</div>
+            <h3 style="margin-bottom:6px;">Товар добавлен в корзину</h3>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;" id="buyModalInfo"></p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn-gold" style="flex:1;min-width:140px;" onclick="closeModal('buyModal');showToast('🛒 Переходим в корзину...')">Перейти в корзину</button>
+                <button class="btn-secondary" style="flex:1;min-width:140px;" onclick="closeModal('buyModal')">Продолжить покупки</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Payment Modal -->
+    <div class="modal-overlay" id="cardPaymentModal" onclick="closeModalOutside(event, 'cardPaymentModal')">
+        <div class="modal-content" style="max-width:460px;">
+            <button class="modal-close-btn" onclick="closeModal('cardPaymentModal')">✕</button>
+            <h3 style="margin-bottom:16px;">Оплата <span class="gold">картой</span></h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Защищённое соединение (SSL) • 3-D Secure</p>
+            <div class="card-form">
+                <div class="card-display" id="cardDisplay">
+                    <div class="card-chip">💳</div>
+                    <div class="card-number-display" id="cardNumberDisplay">•••• •••• •••• ••••</div>
+                    <div class="card-extra">
+                        <span class="card-holder-display" id="cardHolderDisplay">ДЕРЖАТЕЛЬ КАРТЫ</span>
+                        <span class="card-expiry-display" id="cardExpiryDisplay">ММ/ГГ</span>
+                    </div>
+                </div>
+                <div class="card-input-group">
+                    <label>Номер карты</label>
+                    <input type="text" id="cardNumber" maxlength="19" placeholder="0000 0000 0000 0000" oninput="formatCardNumber(this)">
+                </div>
+                <div class="card-row">
+                    <div class="card-input-group" style="flex:1;">
+                        <label>Срок действия</label>
+                        <input type="text" id="cardExpiry" maxlength="5" placeholder="ММ/ГГ" oninput="formatCardExpiry(this)">
+                    </div>
+                    <div class="card-input-group" style="flex:1;">
+                        <label>CVV/CVC</label>
+                        <input type="password" id="cardCvv" maxlength="4" placeholder="•••" oninput="formatCardCvv(this)">
+                    </div>
+                </div>
+                <div class="card-input-group">
+                    <label>Держатель карты</label>
+                    <input type="text" id="cardHolder" placeholder="IVAN IVANOV" oninput="updateCardDisplay()">
+                </div>
+                <div class="card-save">
+                    <label class="pay-note legal-item" style="font-size:12px;color:var(--text-muted);">
+                        <input type="checkbox" id="cardSave">
+                        <span>Сохранить карту для следующих платежей</span>
+                    </label>
+                </div>
+                <div class="card-secure-notice">
+                    🔒 Ваши данные защищены. Платежи проходят через PCI DSS сертифицированный шлюз.
+                </div>
+                <div class="card-pay-summary" id="cardPaySummary">
+                    <span>Сумма к оплате:</span>
+                    <span class="card-pay-total" id="cardPayTotal">0 ₽</span>
+                </div>
+                <button class="btn-gold" style="width:100%;margin-top:8px;" onclick="processCardPayment()">Оплатить</button>
+                <p style="font-size:10px;color:var(--text-light);text-align:center;margin-top:10px;">Нажимая «Оплатить», вы соглашаетесь с условиями оплаты</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Payment Modal (СБП) -->
+    <div class="modal-overlay" id="qrPaymentModal" onclick="closeModalOutside(event, 'qrPaymentModal')">
+        <div class="modal-content" style="max-width:420px;text-align:center;">
+            <button class="modal-close-btn" onclick="closeModal('qrPaymentModal')">✕</button>
+            <h3 style="margin-bottom:16px;">Оплата через <span class="gold">СБП</span></h3>
+            <div class="qr-code-box" id="qrCodeBox">
+                <div class="qr-placeholder" id="qrPlaceholder">
+                    <div class="qr-grid" id="qrGrid"></div>
+                </div>
+            </div>
+            <p style="color:var(--text-muted);font-size:12px;margin:12px 0 4px;">Отсканируйте QR-код в приложении банка</p>
+            <p style="color:var(--text-light);font-size:10px;">Срок действия кода: <span id="qrTimer">5:00</span></p>
+            <div class="qr-amount" id="qrAmount">500 ₽</div>
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+                <button class="btn-gold" style="flex:1;" onclick="closeModal('qrPaymentModal')">Я оплатил</button>
+                <button class="btn-secondary" style="flex:1;" onclick="closeModal('qrPaymentModal')">Отмена</button>
+            </div>
         </div>
     </div>
 

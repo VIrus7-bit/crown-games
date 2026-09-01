@@ -2,6 +2,8 @@
 // ПАРТИКЛЫ
 // ================================================================
 (function() {
+    // На мобильных отключаем частицы для производительности
+    if (window.innerWidth <= 768) return;
     const canvas = document.getElementById('particlesCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -132,11 +134,21 @@ function animateConfetti() {
 // ================================================================
 function showSkeletonLoader() {
     const loader = document.getElementById('skeletonLoader');
-    if (loader) loader.style.display = 'flex';
+    if (loader) {
+        loader.classList.remove('hiding');
+        loader.style.display = 'flex';
+    }
 }
 function hideSkeletonLoader() {
     const loader = document.getElementById('skeletonLoader');
-    if (loader) loader.style.display = 'none';
+    if (!loader) return;
+    // Плавное исчезновение: добавляем класс hiding (opacity + visibility),
+    // после перехода скрываем элемент полностью
+    loader.classList.add('hiding');
+    setTimeout(() => {
+        loader.style.display = 'none';
+        loader.classList.remove('hiding');
+    }, 800); // длительность transition в CSS (0.8s)
 }
 document.addEventListener('DOMContentLoaded', function() {
     showSkeletonLoader();
@@ -233,10 +245,62 @@ function navigateTo(page) {
         try { renderTopGames(); } catch(e){}
         try { renderHeroGames(); } catch(e){}
     }
+    if (page === 'profile' && typeof renderProfileLibrary === 'function') {
+        try { renderProfileLibrary(); } catch(e){}
+    }
     setTimeout(() => {
         isNavigating = false;
     }, 600);
 }
+
+/** Переход к блоку «Блог и новости» на главной странице */
+function goToNews() {
+    // Если главная страница не активна — переходим на неё
+    const homePage = document.getElementById('page-home');
+    const isHomeActive = homePage && homePage.classList.contains('active');
+    if (!isHomeActive) {
+        navigateTo('home');
+    }
+    // Прокручиваем к блоку новостей после отображения главной
+    setTimeout(() => {
+        const newsSection = document.getElementById('newsSection');
+        if (newsSection) {
+            newsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, isHomeActive ? 0 : 600);
+}
+window.goToNews = goToNews;
+
+/** Переключение выпадающего списка языков */
+function toggleLangDropdown(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('langDropdown').classList.toggle('open');
+}
+/** Установить язык и применить переводы */
+function setLang(lang, e) {
+  if (e) e.stopPropagation();
+  document.getElementById('langDropdown').classList.remove('open');
+  document.documentElement.lang = lang;
+  const label = document.getElementById('langLabel');
+  if (label) label.textContent = lang.toUpperCase();
+  try { localStorage.setItem('crownLang', lang); } catch (e) {}
+  // Подсветка активного языка в дропдауне
+  document.querySelectorAll('.lang-dropdown button').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.querySelector(`.lang-dropdown button[onclick*="'${lang}'"]`);
+  if (activeBtn) activeBtn.classList.add('active');
+  // Вызываем существующую функцию перевода со всеми подменю
+  if (typeof changeLanguage === 'function') changeLanguage(lang);
+}
+window.toggleLangDropdown = toggleLangDropdown;
+window.setLang = setLang;
+
+// Закрытие дропдауна при клике вне
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.lang-select')) {
+    const dd = document.getElementById('langDropdown');
+    if (dd) dd.classList.remove('open');
+  }
+});
 document.getElementById('burgerBtn').addEventListener('click', function() {
     this.classList.toggle('active');
     document.getElementById('mainNav').classList.toggle('open');
@@ -322,12 +386,17 @@ function searchGames(query) {
             results.innerHTML = '<div class="empty-result">Ничего не найдено</div>';
             results.classList.add('active');
         } else {
-            results.innerHTML = matches.map(g => `
-                <div class="result-item" onclick="playGame('${g.name.replace(/'/g, "\\'")}'); clearSearch();">
+            results.innerHTML = matches.map(g => {
+                const gIdx = typeof GAMES !== 'undefined' ? GAMES.indexOf(g) : 0;
+                const p = typeof gamePrice === 'function' ? gamePrice(g, gIdx) : null;
+                const priceTxt = p ? (p.discount > 0 ? `<span class="search-discount">-${p.discount}%</span> <span class="search-price">${p.price} ₽</span>` : `<span class="search-price">${p.price} ₽</span>`) : '';
+                return `
+                <div class="result-item" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}'); clearSearch();">
                     <div class="icon"><img src="images/games/${g.img || ''}" alt="${g.name}" onerror="this.style.display='none';this.parentElement.textContent='🎮';"></div>
-                    <div class="info"><h4>${g.name}</h4><p>Нажмите, чтобы запустить</p></div>
+                    <div class="info"><h4>${g.name}</h4><span class="search-cat">${g.cat || ''}</span></div>
+                    ${priceTxt}
                 </div>
-            `).join('');
+            `;}).join('');
             results.classList.add('active');
         }
     } else {
@@ -340,6 +409,7 @@ function clearSearch() {
     document.getElementById('searchResults').classList.remove('active');
     document.getElementById('searchClear').classList.remove('visible');
 }
+
 document.addEventListener('click', function(e) {
     const searchWrap = document.querySelector('.search-wrap');
     if (searchWrap && !searchWrap.contains(e.target)) {
@@ -467,12 +537,7 @@ function removeNotification(id) {
         setTimeout(() => el.remove(), 500);
     }
 }
-setTimeout(() => {
-    addNotification('🏆', 'Новый выигрыш!', 'Игрок KingAce выиграл 1 240 000 ₽ в Starburst', 'win');
-}, 8000);
-setTimeout(() => {
-    addNotification('🎁', 'Бонус активирован!', 'Вы получили 50 фриспинов на Book of Dead', 'bonus');
-}, 12000);
+// Фейковые уведомления удалены — уведомления появляются только по действиям пользователя.
 
 // ================================================================
 // ДЕМО-РЕЖИМ ИГР С ВИРТУАЛЬНЫМИ КРЕДИТАМИ
@@ -597,34 +662,6 @@ function updateFavoritesUI() {
 setTimeout(updateFavoritesUI, 100);
 
 // ================================================================
-// ТОП ИГР — АВТОПРОКРУТКА
-// ================================================================
-let currentSlide = 0;
-const slides = document.querySelectorAll('.games-grid');
-const dots = document.querySelectorAll('.slider-dots span');
-const track = document.getElementById('gamesSliderTrack');
-let autoSlideInterval;
-function goToSlide(index) {
-    if (index < 0) index = 0;
-    if (index >= slides.length) index = slides.length - 1;
-    currentSlide = index;
-    track.style.transform = `translateX(-${index * 100}%)`;
-    dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
-}
-function startAutoSlide() {
-    stopAutoSlide();
-    autoSlideInterval = setInterval(() => goToSlide((currentSlide + 1) % slides.length), 4000);
-}
-function stopAutoSlide() { clearInterval(autoSlideInterval); }
-dots.forEach((dot, i) => dot.addEventListener('click', function() {
-    goToSlide(i); stopAutoSlide(); setTimeout(startAutoSlide, 5000);
-}));
-startAutoSlide();
-const sliderWrapper = document.querySelector('.games-slider-wrapper');
-sliderWrapper.addEventListener('mouseenter', stopAutoSlide);
-sliderWrapper.addEventListener('mouseleave', startAutoSlide);
-
-// ================================================================
 // ФИЛЬТРЫ КАТАЛОГА
 // ================================================================
 function filterGames(type, btn) {
@@ -643,12 +680,23 @@ function filterGames(type, btn) {
 // ПРОФИЛЬ — ВКЛАДКИ
 // ================================================================
 function switchProfileTab(tab, btn) {
-    document.querySelectorAll('.profile-content .tabs button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.profile-content .tab-content').forEach(t => t.classList.remove('active'));
-    document.getElementById('tab-' + tab).classList.add('active');
+    // Поддержка старого и нового (Steam) стиля вкладок
+    const tabsContainer = btn.closest('.profile-tabs') || btn.closest('.tabs');
+    const contentContainer = btn.closest('.profile-right') || btn.closest('.profile-content');
+    if (tabsContainer) {
+        tabsContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    if (contentContainer) {
+        contentContainer.querySelectorAll('.profile-tab-content, .tab-content').forEach(t => t.classList.remove('active'));
+        const target = document.getElementById('tab-' + tab);
+        if (target) target.classList.add('active');
+    }
     if (tab === 'badges') {
         renderAchievements();
+    }
+    if (tab === 'library') {
+        renderProfileLibrary();
     }
 }
 
@@ -978,6 +1026,45 @@ function playGame(gameName) {
 }
 
 // ================================================================
+function buyGame(gameName) {
+    const game = GAMES.find(g => g.name === gameName);
+    if (!game) { showToast('⚠️ Игра не найдена'); return; }
+    const idx = GAMES.indexOf(game);
+    const p = gamePrice(game, idx);
+    const priceStr = p.discount > 0
+        ? `${p.price} ₽ (скидка ${p.discount}%, было ${p.original} ₽)`
+        : `${p.price} ₽`;
+    // Открываем Steam-подобное окно «Перейти в корзину / Продолжить покупки»
+    const info = document.getElementById('buyModalInfo');
+    if (info) info.innerHTML = `<strong>${game.name}</strong><br>${priceStr}`;
+    openModal('buyModal');
+    addNotification('🛒', 'Корзина', `"${game.name}" добавлена за ${priceStr}`, 'info');
+}
+
+// ================================================================
+function renderProfileLibrary() {
+    const container = document.getElementById('profileLibrary');
+    if (!container || typeof GAMES === 'undefined') return;
+    // Берём первые 12 игр для библиотеки профиля
+    const games = GAMES.slice(0, 12);
+    container.innerHTML = games.map((g, i) => {
+        const p = gamePrice(g, i);
+        const priceHtml = p.discount > 0
+            ? `<span class="price-discount">-${p.discount}%</span><span class="price-current">${p.price} ₽</span>`
+            : `<span class="price-current">${p.price} ₽</span>`;
+        return `<div class="lib-game-card" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')">
+            <div class="lib-game-img"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy"></div>
+            <div class="lib-game-info">
+                <span class="lib-game-name">${g.name}</span>
+                <span class="lib-game-cat">${g.cat}</span>
+                <span class="lib-game-hours">${Math.floor(Math.random() * 200 + 10)} ч</span>
+            </div>
+            <div class="lib-game-price">${priceHtml}</div>
+        </div>`;
+    }).join('');
+}
+
+// ================================================================
 // РЕГИСТРАЦИЯ
 // ================================================================
 function registerUser(e) {
@@ -1235,27 +1322,29 @@ window.addEventListener('scroll', () => {
 scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
 // ================================================================
-// АНИМАЦИИ ПОЯВЛЕНИЯ
+// АНИМАЦИИ ПОЯВЛЕНИЯ (с защитой от отсутствия IntersectionObserver)
 // ================================================================
-const observer = new IntersectionObserver((entries) => {
+if (typeof IntersectionObserver !== 'undefined') {
+  const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-        }
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
     });
-}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-document.querySelectorAll('.fade-in, .fade-in-left, .fade-in-right, .stagger-children, .scroll-zoom').forEach(el => observer.observe(el));
-setTimeout(() => {
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+  document.querySelectorAll('.fade-in, .fade-in-left, .fade-in-right, .stagger-children, .scroll-zoom').forEach(el => observer.observe(el));
+  setTimeout(() => {
     document.querySelectorAll('.stagger-children').forEach(el => el.classList.add('visible'));
     document.querySelectorAll('.fade-in').forEach(el => el.classList.add('visible'));
     document.querySelectorAll('.fade-in-left').forEach(el => el.classList.add('visible'));
     document.querySelectorAll('.fade-in-right').forEach(el => el.classList.add('visible'));
     document.querySelectorAll('.scroll-zoom').forEach(el => el.classList.add('visible'));
     document.querySelectorAll('.vip-progress .fill').forEach(el => {
-        const target = parseInt(el.dataset.target);
-        setTimeout(() => { el.style.width = target + '%'; }, 500);
+      const target = parseInt(el.dataset.target);
+      setTimeout(() => { el.style.width = target + '%'; }, 500);
     });
-}, 300);
+  }, 300);
+}
 
 // ================================================================
 // 37 АЧИВОК В СТИЛЕ STEAM
@@ -1336,15 +1425,25 @@ function submitContact(e) {
 // ================================================================
 // ТАЙМЕРЫ АКЦИЙ
 // ================================================================
-setInterval(() => {
-    document.querySelectorAll('.promo-image .timer').forEach(el => {
+// Оптимизация: используем делегирование и проверку наличия элементов
+(function() {
+  let timerInterval = null;
+  function startTimer() {
+    if (timerInterval) return;
+    timerInterval = setInterval(() => {
+      const timers = document.querySelectorAll('.promo-image .timer');
+      if (!timers.length) return; // нет таймеров — не тратим ресурсы
+      timers.forEach(el => {
         let t = el.textContent.replace('⏱️ ', '').split(':');
         let h = parseInt(t[0]), m = parseInt(t[1]), s = parseInt(t[2]);
         s--;
         if (s < 0) { s = 59; m--; if (m < 0) { m = 59; h--; if (h < 0) { h = 0; m = 0; s = 0; } } }
         el.textContent = `⏱️ ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    });
-}, 1000);
+      });
+    }, 1000);
+  }
+  startTimer();
+})();
 
 // ================================================================
 // PWA — SERVICE WORKER
@@ -1383,9 +1482,10 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.closeModalOutside = closeModalOutside;
 window.playGame = playGame;
+window.buyGame = buyGame;
+window.renderProfileLibrary = renderProfileLibrary;
 window.showToast = showToast;
 window.submitContact = submitContact;
-window.goToSlide = goToSlide;
 window.acceptCookies = acceptCookies;
 window.declineCookies = declineCookies;
 window.toggleTheme = toggleTheme;
@@ -1422,13 +1522,129 @@ const GAMES = [{"name":"7 Days to Die","img":"7_days_to_die.jpg","cat":"rpg","de
 // ================================================================
 // НОВЫЕ ФУНКЦИИ: игра из Steam-обложек, каталог, слайдер, hero
 // ================================================================
+// Все обложки игр хранятся в папке images/games/ (551 файл напрямую в корне).
 const IMG_BASE = "images/games/";
-function gameImg(g) { return IMG_BASE + g.img; }
+function gameImg(g) {
+  return IMG_BASE + g.img;
+}
+
+/** Уникальное описание игры на основе жанра и названия */
+function gameDescription(g) {
+  // Базовые описания по жанрам
+  const genreDesc = {
+    shooter: 'Динамичный шутер с захватывающими перестрелками, соревновательным мультиплеером и отличной отдачей от оружия.',
+    strategy: 'Глубокая стратегия, требующая продуманного планирования, управления ресурсами и тактического мышления.',
+    rpg: 'Масштабная RPG с проработанным миром, системой прокачки и множеством сюжетных развилок.',
+    survival: 'Напряжённый survival-хоррор с исследованием опасного мира, крафтом и борьбой за выживание.',
+    sandbox: 'Открытая песочница с безграничными возможностями для творчества и экспериментов.',
+    sport: 'Реалистичный спортивный симулятор с точной физикой и захватывающим соревновательным режимом.',
+    indie: 'Оригинальная инди-игра с уникальной художественной стилистикой и необычными механиками.',
+    horror: 'Атмосферный хоррор с напряжённым геймплеем, скримерами и глубоким погружением в ужас.',
+  };
+  const base = genreDesc[g.cat] || 'Увлекательная игра с уникальным геймплеем и глубокой проработкой мира.';
+  // Добавляем уникальную фразу с названием игры, чтобы описание отличалось
+  const intro = `«${g.name}» — `;
+  return intro + base;
+}
+
+/** Steam-стиль цены для игры: базовые цены + случайные скидки */
+function gamePrice(g, index) {
+  const basePrices = [499, 799, 999, 1249, 1499, 1999, 2499, 2999, 3499, 3999, 4499, 4999, 5999, 6999];
+  const basePrice = basePrices[(index || 0) % basePrices.length];
+  // Каждая 3-я игра со скидкой (как в Steam)
+  const hasDiscount = ((index || 0) % 3 === 0);
+  if (hasDiscount) {
+    const discount = [10, 20, 25, 33, 40, 50][((index || 0) / 3) % 6];
+    const discounted = Math.round(basePrice * (100 - discount) / 100);
+    return { price: discounted, original: basePrice, discount };
+  }
+  return { price: basePrice, discount: 0 };
+}
+
+// ================================================================
+// ГЛОБАЛЬНЫЙ ОБРАБОТЧИК ОШИБОК ИЗОБРАЖЕНИЙ
+// Если картинка не загрузилась (например, старый путь images/games/без_подпапки),
+// ищем её в подпапках images1..images6 и показываем вместо пустого места.
+// ================================================================
+(function() {
+  // Кэш: имя файла -> уже проверенная подпапка (или null, если не нашли)
+  const folderCache = {};
+  // Запоминаем, какие src уже пробовали, чтобы не зациклиться
+  const attempted = new Set();
+  const FOLDERS = ['images1', 'images2', 'images3', 'images4', 'images5', 'images6'];
+
+  function findFolder(fileName) {
+    if (folderCache.hasOwnProperty(fileName)) return folderCache[fileName];
+    // Пытаемся определить папку через имена в GAMES (если игра есть в каталоге)
+    if (typeof GAMES !== 'undefined' && GAMES.length) {
+      const g = GAMES.find(x => x.img === fileName);
+      if (g) {
+        try { folderCache[fileName] = gameImg(g).replace(IMG_BASE, '').split('/')[0]; return folderCache[fileName]; }
+        catch (e) {}
+      }
+    }
+    // Иначе — перебор всех подпапок через Image-объект
+    for (const f of FOLDERS) {
+      const probe = new Image();
+      probe.src = IMG_BASE + f + '/' + fileName;
+      // Мы не можем синхронно узнать, существует ли файл; поэтому используем
+      // разумный подход: по умолчанию кладём в images1 и пробуем при ошибке дальше.
+      folderCache[fileName] = f;
+      break;
+    }
+    return folderCache[fileName];
+  }
+
+  document.addEventListener('error', function(e) {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    const src = img.getAttribute('src') || '';
+    if (!src || attempted.has(src)) return;
+    attempted.add(src);
+    // Извлекаем имя файла из пути
+    const parts = src.split('/');
+    const fileName = parts[parts.length - 1];
+    if (!fileName) return;
+    const folder = findFolder(fileName);
+    if (folder) {
+      // Показываем заглушку-подпись и пытаемся загрузить правильный путь
+      const alt = img.getAttribute('alt') || fileName;
+      img.setAttribute('data-fallback', '1');
+      img.src = IMG_BASE + folder + '/' + fileName;
+      // Если и это не загрузилось — оставляем подпись
+      if (!img.onerror) img.onerror = function() { this.outerHTML = '<div class="img-fallback">' + alt + '</div>'; };
+    } else {
+      // Не нашли папку — показываем подпись вместо картинки
+      const alt = img.getAttribute('alt') || fileName;
+      img.outerHTML = '<div class="img-fallback">' + alt + '</div>';
+    }
+  }, true); // перехватываем в фазе capture, чтобы ловить все img
+})();
 
 function renderHeroGames() {
   const box = document.getElementById('heroGames');
   if (!box || typeof GAMES === 'undefined' || !GAMES.length) return;
-  const top = GAMES.slice(0, 6);
+  // Рандомный выбор 6 обложек, который меняется каждый час
+  const HOUR = 60 * 60 * 1000;
+  let heroIdx = null;
+  try {
+    const saved = JSON.parse(localStorage.getItem('crownHeroIdx') || 'null');
+    if (saved && Date.now() - saved.time < HOUR) {
+      heroIdx = saved.idx;
+    }
+  } catch (e) {}
+  if (heroIdx === null) {
+    // Случайный сдвиг: берём 6 подряд с случайного места (не пересекаются с топ-32 лентой полностью)
+    const maxStart = Math.max(0, GAMES.length - 6);
+    heroIdx = Math.floor(Math.random() * maxStart);
+    try {
+      localStorage.setItem('crownHeroIdx', JSON.stringify({ idx: heroIdx, time: Date.now() }));
+    } catch (e) {}
+  }
+  const top = [];
+  for (let i = 0; i < 6; i++) {
+    top.push(GAMES[(heroIdx + i) % GAMES.length]);
+  }
   box.innerHTML = top.map((g, i) =>
     `<div class="hero-game-card" onclick="playGame('${g.name}')">
        <img src="${gameImg(g)}" alt="${g.name}" loading="lazy">
@@ -1439,62 +1655,79 @@ function renderHeroGames() {
 function renderTopGames() {
   const track = document.getElementById('gamesSliderTrack');
   if (!track || typeof GAMES === 'undefined' || !GAMES.length) return;
-  // Берём 20 игр, разбиваем на 4 слайда по 5
-  const top = GAMES.slice(0, 20);
-  const perSlide = 5;
-  const ranks = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'];
-  let html = '';
-  for (let s = 0; s < top.length; s += perSlide) {
-    const slideGames = top.slice(s, s + perSlide);
-    html += `<div class="games-grid">` + slideGames.map((g, i) => {
-      const absIdx = s + i;
-      return `<div class="game-card" data-game="${g.name.replace(/'/g, "\\'")}" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')" style="background-image:url('${gameImg(g)}')">
+  // Берём 32 игры (топ) и строим непрерывную ленту с дублированием для бесшовной прокрутки
+  const top = GAMES.slice(0, 32);
+  const ranks = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI','XXII','XXIII','XXIV','XXV','XXVI','XXVII','XXVIII','XXIX','XXX','XXXI','XXXII'];
+
+  function card(g, absIdx) {
+    const p = gamePrice(g, absIdx);
+    const priceHtml = p.discount > 0
+      ? `<span class="price-discount">-${p.discount}%</span><span class="price-original">${p.original} ₽</span><span class="price-current">${p.price} ₽</span>`
+      : `<span class="price-current">${p.price} ₽</span>`;
+    return `<div class="game-card" data-game="${g.name.replace(/'/g, "\\'")}" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')" style="background-image:url('${gameImg(g)}')">
       <div class="card-fav" data-game="${g.name}" onclick="event.stopPropagation();toggleFav(this)">♡</div>
       <div class="rank ${absIdx===0?'gold':''}">${ranks[absIdx]}</div>
-      <div class="card-image"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy"></div>
+      <div class="card-image"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy" onerror="this.style.visibility='hidden'"></div>
       <div class="card-overlay">
         <h4 class="card-title">${g.name}</h4>
         <p class="card-sub">${g.cat}</p>
       </div>
-      <div class="game-tooltip">${g.desc}</div>
-      <button class="btn-play" onclick="event.stopPropagation();playGame('${g.name.replace(/'/g, "\\'")}')">▶ Играть</button>
-      <button class="btn-demo" onclick="event.stopPropagation();startDemoMode('${g.name.replace(/'/g, "\\'")}')">🎮 Демо</button>
+      <div class="card-price">${priceHtml}</div>
+      <div class="game-tooltip">${gameDescription(g)}</div>
+      <button class="btn-buy" onclick="event.stopPropagation();buyGame('${g.name.replace(/'/g, "\\'")}')">Купить</button>
     </div>`;
-    }).join('') + `</div>`;
   }
-  track.innerHTML = html;
-  // Генерируем точки, если их недостаточно
+
+  // Одна непрерывная лента: 32 карточки + ещё 32 дубликата (для бесшовной прокрутки)
+  let html = top.map((g, i) => card(g, i)).join('') + top.map((g, i) => card(g, i)).join('');
+  // Упаковываем в контейнер-ленту (marquee)
+  track.innerHTML = `<div class="games-marquee">${html}</div>`;
+  // Помечаем трек как marquee-режим (скрываем скролл, включаем анимацию)
+  track.classList.add('marquee-mode');
+
+  // Индикаторы (точки) не нужны для бесконечной прокрутки — удаляем старые, если есть
   const sliderWrap = track.closest('.games-slider-wrapper');
   if (sliderWrap) {
-    let dotsBox = sliderWrap.querySelector('.slider-dots');
-    if (!dotsBox) {
-      dotsBox = document.createElement('div');
-      dotsBox.className = 'slider-dots';
-      sliderWrap.appendChild(dotsBox);
-    }
-    const total = top.length / perSlide;
-    dotsBox.innerHTML = '';
-    for (let i = 0; i < total; i++) dotsBox.innerHTML += `<span class="${i===0?'active':''}" data-index="${i}"></span>`;
+    const oldDots = sliderWrap.querySelector('.slider-dots');
+    if (oldDots) oldDots.remove();
   }
 }
+
+// Инициализация marquee: пауза при наведении
+function initTopMarquee() {
+  const wrap = document.querySelector('.games-slider-wrapper');
+  const track = document.getElementById('gamesSliderTrack');
+  if (!wrap || !track) return;
+  // Останавливаем анимацию при наведении и возобновляем при уходе
+  wrap.addEventListener('mouseenter', () => track.classList.add('paused'));
+  wrap.addEventListener('mouseleave', () => track.classList.remove('paused'));
+}
+window.initTopMarquee = initTopMarquee;
 
 function renderCatalog() {
   const grid = document.getElementById('catalogGrid');
   if (!grid || typeof GAMES === 'undefined' || !GAMES.length) return;
-  grid.innerHTML = GAMES.map(g =>
-    `<div class="catalog-item" data-type="${g.cat}" data-game="${g.name}" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')">
+  grid.innerHTML = GAMES.map((g, idx) => {
+    const p = gamePrice(g, idx);
+    const priceHtml = p.discount > 0
+      ? `<span class="price-discount">-${p.discount}%</span><span class="price-original">${p.original} ₽</span><span class="price-current">${p.price} ₽</span>`
+      : `<span class="price-current">${p.price} ₽</span>`;
+    return `<div class="catalog-item" data-type="${g.cat}" data-game="${g.name}" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')">
        <div class="icon"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy"></div>
        <h4>${g.name}</h4>
        <span class="cat-badge">${g.cat}</span>
        <div class="catalog-rating">★★★★☆</div>
+       <div class="catalog-price">${priceHtml}</div>
+       <button class="catalog-buy" onclick="event.stopPropagation();buyGame('${g.name.replace(/'/g, "\\'")}')">Купить</button>
        <button class="catalog-fav" onclick="event.stopPropagation();toggleFav(this)" data-game="${g.name}">♡</button>
-       <div class="catalog-tooltip">${g.desc}</div>
-     </div>`).join('');
+       <div class="catalog-tooltip">${gameDescription(g)}</div>
+     </div>`;
+  }).join('');
 }
 
 function filterGames(type, btn) {
   if (btn) {
-    document.querySelectorAll('#catalogFilters button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.catalog-filters button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
   document.querySelectorAll('#catalogGrid .catalog-item').forEach(item => {
@@ -1503,65 +1736,10 @@ function filterGames(type, btn) {
   });
 }
 
-// Слайдер с автопрокруткой каждые 5 сек
+// «Топ игр» — непрерывная marquee-лента (плавная, зацикленная, без скролла)
 function initSliderAutoplay() {
-  const sliderWrap = document.querySelector('.games-slider-wrapper');
-  if (!sliderWrap) return;
-  // Добавить стрелки, если их нет
-  if (!sliderWrap.querySelector('.slider-prev')) {
-    sliderWrap.insertAdjacentHTML('afterbegin', '<button class="slider-arrow slider-prev" onclick="slideGames(-1, event)" aria-label="Назад">‹</button>');
-  }
-  if (!sliderWrap.querySelector('.slider-next')) {
-    sliderWrap.insertAdjacentHTML('beforeend', '<button class="slider-arrow slider-next" onclick="slideGames(1, event)" aria-label="Вперёд">›</button>');
-  }
-  window._slideIdx = 0;
-  const track = sliderWrap.querySelector('.games-slider-track');
-  const grids = sliderWrap.querySelectorAll('.games-grid');
-  const dots = sliderWrap.querySelectorAll('.slider-dots span');
-  window._slideTotal = Math.max(1, grids.length);
-  function go(i) {
-    window._slideIdx = ((i % window._slideTotal) + window._slideTotal) % window._slideTotal;
-    if (track) track.style.transform = 'translateX(-' + (window._slideIdx * 100) + '%)';
-    if (dots.length) {
-      dots.forEach((d, di) => d.classList.toggle('active', di === window._slideIdx));
-    }
-  }
-  window.goSlide = go;
-  if (dots.length) {
-    dots.forEach((d, di) => {
-      d.style.cursor = 'pointer';
-      d.addEventListener('click', () => go(di));
-    });
-  }
-  // Автопрокрутка каждые 5 сек
-  let auto = null;
-  function startAuto() { stopAuto(); auto = setInterval(() => go(window._slideIdx + 1), 5000); }
-  function stopAuto() { if (auto) clearInterval(auto); }
-  window.startSliderAuto = startAuto;
-  window.stopSliderAuto = stopAuto;
-  startAuto();
-  sliderWrap.addEventListener('mouseenter', stopAuto);
-  sliderWrap.addEventListener('mouseleave', startAuto);
-  // Свайп для мобильных
-  let sx = 0, dragging = false;
-  sliderWrap.addEventListener('touchstart', e => { sx = e.touches[0].clientX; dragging = true; }, { passive: true });
-  sliderWrap.addEventListener('touchend', e => {
-    if (!dragging) return; dragging = false;
-    const dx = e.changedTouches[0].clientX - sx;
-    if (dx < -40) go(window._slideIdx + 1);
-    else if (dx > 40) go(window._slideIdx - 1);
-  }, { passive: true });
+  initTopMarquee();
 }
-window.slideGames = function(dir, e) {
-  if (e) { e.preventDefault(); e.stopPropagation(); }
-  if (typeof window.goSlide === 'function' && typeof window._slideIdx === 'number') {
-    window.goSlide(window._slideIdx + dir);
-    if (typeof window.stopSliderAuto === 'function') {
-      window.stopSliderAuto();
-      setTimeout(() => window.startSliderAuto && window.startSliderAuto(), 8000);
-    }
-  }
-};
 
 // Авто-раст поля + счётчик символов
 function autoGrow(el) {
@@ -1587,13 +1765,11 @@ function renderAllGames() {
   try { renderPopularGrid(); } catch (e) { console.warn('popular err', e); }
 }
 
-// Популярные игры (если есть контейнер)
+// Популярные игры (игры 33-40, чтобы не повторялись с «Топ игр» 1-32)
 function renderPopularGrid() {
   const grid = document.getElementById('popularGrid');
   if (!grid || typeof GAMES === 'undefined' || !GAMES.length) return;
-  const top = ['dota_2','counter_strike_2','cyberpunk_2077','red_dead_redemption_2','stardew_valley','hades']
-    .map(f => GAMES.find(g => g.img === f + '.jpg'))
-    .filter(Boolean);
+  const top = GAMES.slice(32, 40);
   if (!top.length) return;
   grid.innerHTML = top.map(g =>
     `<div class="popular-card" onclick="playGame('${g.name}')">
@@ -1601,6 +1777,17 @@ function renderPopularGrid() {
        <h4>${g.name}</h4>
        <div class="rating">★★★★★</div>
      </div>`).join('');
+}
+
+// Иллюстрации для новостей (игры 41-46, чтобы не повторялись с другими блоками)
+function renderNewsImages() {
+  if (typeof GAMES === 'undefined' || !GAMES.length) return;
+  const newsGames = GAMES.slice(40, 46);
+  const ids = ['newsImg1', 'newsImg2', 'newsImg3'];
+  ids.forEach((id, i) => {
+    const img = document.getElementById(id);
+    if (img && newsGames[i]) img.src = gameImg(newsGames[i]);
+  });
 }
 
 // Перехват DOMContentLoaded: запуск новых рендеров после текущей инициализации
@@ -1623,25 +1810,52 @@ function renderPopularGrid() {
 // ================================================================
 function openGameDetail(name) {
   const game = GAMES.find(g => g.name === name);
-  if (!game) { playGame(name); return; }
+  if (!game) { buyGame(name); return; }
   const body = document.getElementById('gameDetailBody');
-  if (!body) { playGame(name); return; }
-  const specKeys = ['Жанр', 'Тип', 'Рейтинг', 'Онлайн', 'Возраст', 'Разработчик'];
-  const specVals = [game.cat, 'Игра', '4.8/5', '50 000+', '12+', 'Crown Games'];
+  if (!body) { buyGame(name); return; }
+  const gIdx = GAMES.indexOf(game);
+  const p = gamePrice(game, gIdx);
+  const priceHtml = p.discount > 0
+    ? `<span class="gd-price-block"><span class="price-discount">-${p.discount}%</span><span class="price-original">${p.original} ₽</span><span class="price-current">${p.price} ₽</span></span>`
+    : `<span class="gd-price-block"><span class="price-current">${p.price} ₽</span></span>`;
+  // Расширенные данные об игре (как в Steam)
+  const d = gameDetails(game, gIdx);
+  const specKeys = ['Жанр', 'Разработчик', 'Издатель', 'Дата выхода', 'Возраст', 'Онлайн'];
+  const specVals = [d.genre, d.developer, d.publisher, d.release, d.age, d.online];
   body.innerHTML = `
     <div class="gd-layout">
       <div class="gd-image"><img src="${gameImg(game)}" alt="${game.name}"></div>
       <div class="gd-info">
         <span class="gd-cat">${game.cat}</span>
         <h3>${game.name}</h3>
-        <div class="gd-rating">★★★★★ <span>4.8 · 2 340 отзывов</span></div>
-        <p class="gd-desc">${game.desc}</p>
+        <div class="gd-rating">★★★★★ <span>${d.rating} · ${d.reviews} отзывов</span></div>
+        <p class="gd-desc">${gameDescription(game)}</p>
+        ${priceHtml}
         <div class="gd-specs">
           <h4>Характеристики</h4>
           ${specKeys.map((k, i) => `<div class="gd-spec-row"><span class="gd-spec-name">${k}</span><span class="gd-spec-val">${specVals[i]}</span></div>`).join('')}
         </div>
+        <div class="gd-features">
+          <h4>Особенности</h4>
+          <div class="gd-tags">${d.tags.map(t => `<span class="gd-tag">${t}</span>`).join('')}</div>
+        </div>
+        <div class="gd-languages">
+          <h4>Языки</h4>
+          <p>${d.languages}</p>
+        </div>
+        <div class="gd-sysreq">
+          <h4>Системные требования</h4>
+          <div class="sysreq-block">
+            <span class="sysreq-title">Минимальные:</span>
+            <p>${d.minReq}</p>
+          </div>
+          <div class="sysreq-block">
+            <span class="sysreq-title">Рекомендуемые:</span>
+            <p>${d.recReq}</p>
+          </div>
+        </div>
         <div class="gd-buttons">
-          <button class="btn-gold" onclick="closeModal('gameDetailModal');playGame('${game.name.replace(/'/g, "\\'")}')">▶ Играть</button>
+          <button class="btn-gold" onclick="closeModal('gameDetailModal');buyGame('${game.name.replace(/'/g, "\\'")}')">Купить</button>
           <button class="btn-secondary" onclick="closeModal('gameDetailModal');startDemoMode('${game.name.replace(/'/g, "\\'")}')">🎮 Демо</button>
           <button class="btn-secondary" onclick="closeModal('gameDetailModal')">✕ Закрыть</button>
         </div>
@@ -1651,22 +1865,52 @@ function openGameDetail(name) {
 }
 window.openGameDetail = openGameDetail;
 
-// ================================================================
-// LIVE-ЧАТ: ОТПРАВКА СООБЩЕНИЯ И БОТЫ
-// ================================================================
-function sendLiveMessage() {
-  const input = document.getElementById('liveChatInput');
-  if (!input) return;
-  const msg = input.value.trim();
-  if (!msg) return;
-  addLiveMessage('👤 Вы', msg);
-  input.value = '';
-  setTimeout(() => {
-    const replies = ['Круто!', 'Повезёт! 🍀', 'Согласен!', 'Отличный выбор!', 'Удачи!'];
-    addLiveMessage(liveUsernames[Math.floor(Math.random()*liveUsernames.length)], replies[Math.floor(Math.random()*replies.length)]);
-  }, 1200);
+/** Расширенные данные об игре, сгенерированные по жанру и названию (как в Steam) */
+function gameDetails(g, idx) {
+  const devs = ['Valve', 'CD Projekt RED', 'FromSoftware', 'Rockstar Games', 'Blizzard Entertainment', 'Electronic Arts', 'Ubisoft', 'Bethesda', 'Square Enix', 'Capcom', 'Bandai Namco', 'Paradox Interactive', 'Larian Studios', 'ConcernedApe', 'Frictional Games', 'Amanita Design', 'Team Cherry', 'Mojang', 'Epic Games', 'Naughty Dog'];
+  const pubs = ['Crown Games', '2K Games', 'Activision', 'Sony Interactive', 'Microsoft Studios', 'Deep Silver', 'Focus Home', 'Devolver Digital', 'tinyBuild', 'Team17', '505 Games', 'Warner Bros', 'Sega', 'Konami', 'Nintendo'];
+  const dev = devs[(idx + g.name.length) % devs.length];
+  const pub = pubs[(idx * 3 + g.name.length) % pubs.length];
+  const year = 2015 + (idx % 10);
+  const month = 1 + (idx % 12);
+  const day = 1 + ((idx * 7) % 28);
+  const ratings = ['4.5', '4.6', '4.7', '4.8', '4.9', '5.0'];
+  const reviews = [1234, 2340, 3456, 5678, 8900, 12345, 23456][idx % 7];
+  const genreMap = {
+    shooter: 'Шутер', strategy: 'Стратегия', rpg: 'Ролевая игра', survival: 'Выживание',
+    sandbox: 'Песочница', sport: 'Спортивный симулятор', indie: 'Инди', horror: 'Хоррор',
+  };
+  const tagsByGenre = {
+    shooter: ['Экшен', 'От первого лица', 'Мультиплеер', 'Соревновательный'],
+    strategy: ['Пошаговая', 'Реалтайм', 'Управление ресурсами', 'Глубокая тактика'],
+    rpg: ['Открытый мир', 'Прокачка', 'Сюжет', 'Выборы и последствия'],
+    survival: ['Крафт', 'Исследование', 'Опасный мир', 'База'],
+    sandbox: ['Творчество', 'Модификации', 'Открытый мир', 'Строительство'],
+    sport: ['Симуляция', 'Карьера', 'Онлайн-матчи', 'Реализм'],
+    indie: ['Уникальный стиль', 'Атмосфера', 'Головоломки', 'Художественная ценность'],
+    horror: ['Атмосфера', 'Скримеры', 'Сюжет', 'Напряжение'],
+  };
+  const ageByGenre = { shooter: '16+', strategy: '10+', rpg: '16+', survival: '18+', sandbox: '7+', sport: '3+', indie: '12+', horror: '18+' };
+  const os = ['Windows 10 64-bit', 'Windows 11 64-bit'];
+  return {
+    genre: genreMap[g.cat] || 'Игра',
+    developer: dev,
+    publisher: pub,
+    release: `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`,
+    age: ageByGenre[g.cat] || '12+',
+    online: (idx % 3 === 0) ? '50 000+ игроков' : 'Синглплеер',
+    rating: ratings[idx % ratings.length],
+    reviews: reviews.toLocaleString('ru-RU'),
+    tags: tagsByGenre[g.cat] || ['Увлекательная', 'Качественная'],
+    languages: 'Русский, English, Deutsch, Français, Español, 中文, 日本語, Português',
+    minReq: `ОС: ${os[0]} · Процессор: Intel Core i3-8100 / AMD Ryzen 3 1200 · ОЗУ: 8 ГБ · Видеокарта: NVIDIA GTX 960 / AMD R9 380 · DirectX 11 · 30 ГБ на диске`,
+    recReq: `ОС: ${os[1]} · Процессор: Intel Core i7-9700K / AMD Ryzen 5 3600 · ОЗУ: 16 ГБ · Видеокарта: NVIDIA RTX 2060 / AMD RX 5700 · DirectX 12 · 30 ГБ SSD`,
+  };
 }
-window.sendLiveMessage = sendLiveMessage;
+
+// ================================================================
+// LIVE-ЧАТ: ОТПРАВКА СООБЩЕНИЯ И БОТЫ (удалено — страница LIVE больше не используется)
+// ================================================================
 
 // Экспорт в window
 window.renderAllGames = renderAllGames;
@@ -1702,11 +1946,13 @@ function buildCoverRibbons() {
 
   const s = getRibbonSizes();
   const step = s.coverW + s.gap;
+  const isMobile = window.innerWidth <= 768;
   // Контейнер 300% × 300%, повёрнут на 30°. Лент нужно ×3 от высоты экрана + запас.
-  const RIBBON_COUNT = Math.ceil((window.innerHeight * 3) / (s.ribbonH + s.gap)) + 6;
+  // На мобильных создаём меньше лент для производительности (но фон сохраняем)
+  const RIBBON_COUNT = Math.ceil((window.innerHeight * 3) / (s.ribbonH + s.gap)) + (isMobile ? 2 : 6);
   // Обложек: ширина ленты = s.ribbonW vw, каждая занимает step px. Запас +50%.
   const needed = Math.ceil((window.innerWidth * s.ribbonW / 100) / step) * 1.5;
-  const COVERS_PER_RIBBON = Math.max(24, Math.ceil(needed));
+  const COVERS_PER_RIBBON = Math.max(isMobile ? 16 : 24, Math.ceil(needed));
   const total = GAMES.length;
 
   for (let r = 0; r < RIBBON_COUNT; r++) {
@@ -1755,4 +2001,577 @@ window.addEventListener('resize', function() {
 
 window.buildCoverRibbons = buildCoverRibbons;
 window.refreshCoverRibbons = refreshCoverRibbons;
+
+// ================================================================
+// ПОПОЛНЕНИЕ СЕРВИСОВ — табы, быстрые суммы, расчёт комиссии
+// ================================================================
+const TOPUP_COMMISSION = 0.074; // комиссия ~7.4%
+
+/** Переключение табов сервиса */
+function initTopupTabs() {
+  const tabs = document.querySelectorAll('.topup-tab');
+  if (!tabs.length) return;
+  tabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      tabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      updateTopupPrice(); // пересчёт цены при смене сервиса
+    });
+  });
+}
+
+/** Автозаполнение суммы по кнопкам быстрого выбора с плавным счётом */
+function initQuickSums() {
+  const buttons = document.querySelectorAll('.quick-sum');
+  if (!buttons.length) return;
+  buttons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const amountEl = document.getElementById('topupAmount');
+      if (!amountEl) return;
+      const target = parseInt(this.dataset.amount, 10) || 0;
+      // Плавный счёт от текущего значения до целевого
+      animateAmountCount(amountEl, target);
+    });
+  });
+}
+
+/** Плавный счёт суммы в поле ввода */
+function animateAmountCount(amountEl, target) {
+  const from = parseFloat(amountEl.value) || 0;
+  const duration = 500; // мс
+  const startTime = performance.now();
+  function frame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Плавное замедление (ease-out)
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(from + (target - from) * eased);
+    amountEl.value = current;
+    if (progress < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      amountEl.value = target;
+      updateTopupPrice(); // после завершения счёта — пересчитываем цену
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+/** Переключение кнопок выбора региона */
+function initRegionTabs() {
+  const tabs = document.querySelectorAll('.region-tab');
+  if (!tabs.length) return;
+  tabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      tabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+}
+
+/** Расчёт итоговой цены с комиссией и обновление pay-summary и прогресс-бара */
+function updateTopupPrice() {
+  const amountEl = document.getElementById('topupAmount');
+  const priceEl = document.getElementById('topupPrice');
+  if (!amountEl) return;
+  let amount = parseFloat(amountEl.value);
+  if (isNaN(amount) || amount <= 0) amount = 0;
+
+  // Динамическая комиссия в зависимости от суммы
+  let feePercent = 7.4;
+  if (amount >= 15000) {
+    feePercent = 2;
+  } else if (amount >= 7500) {
+    feePercent = 3.5;
+  } else if (amount >= 5000) {
+    feePercent = 5;
+  } else if (amount >= 3000) {
+    feePercent = 6;
+  } else if (amount >= 2000) {
+    feePercent = 6.5;
+  }
+
+  const total = Math.round(amount * (1 + feePercent / 100));
+  if (priceEl) priceEl.textContent = total + ' ₽';
+
+  // Обновляем панель «Способ оплаты»
+  const paySum = document.getElementById('paySumAmount');
+  const payFee = document.getElementById('paySumFee');
+  const payTotal = document.getElementById('paySumTotal');
+  const shown = (amount > 0) ? amount + ' ₽' : '0 ₽';
+  if (paySum) paySum.textContent = shown;
+  if (payFee) payFee.textContent = (amount > 0) ? (feePercent + '% (' + Math.round(amount * feePercent / 100) + ' ₽)') : '0 ₽';
+  if (payTotal) payTotal.textContent = (amount > 0) ? (total + ' ₽') : '0 ₽';
+
+  // Обновляем прогресс-бар комиссии
+  updateFeeProgress(amount);
+}
+
+/** Обновление прогресс-бара и индикатора скидки */
+function updateFeeProgress(amount) {
+  // Прогресс: 0 → 15000 руб (от 7.4% до 2%)
+  const maxForDiscount = 15000;
+  const progress = Math.min(amount / maxForDiscount, 1);
+  const fillEl = document.querySelector('.fee-progress-fill');
+  const labelEl = document.querySelector('.fee-progress-label');
+  const pctEl = document.querySelector('.fee-pct');
+  const badgeEl = document.querySelector('.discount-badge b');
+
+  if (fillEl) fillEl.style.width = Math.round(progress * 100) + '%';
+  if (pctEl) {
+    let currentFee = 7.4;
+    if (amount >= 15000) currentFee = 2;
+    else if (amount >= 7500) currentFee = 3.5;
+    else if (amount >= 5000) currentFee = 5;
+    else if (amount >= 3000) currentFee = 6;
+    else if (amount >= 2000) currentFee = 6.5;
+    pctEl.textContent = currentFee + '%';
+  }
+  if (badgeEl) {
+    let discount = 0;
+    if (amount >= 15000) discount = 5.4;
+    else if (amount >= 7500) discount = 3.9;
+    else if (amount >= 5000) discount = 2.4;
+    else if (amount >= 3000) discount = 1.4;
+    else if (amount >= 2000) discount = 0.9;
+    badgeEl.textContent = '-' + discount + '%';
+  }
+  if (labelEl) {
+    const nextTier = amount < 2000 ? 2000 : amount < 3000 ? 3000 : amount < 5000 ? 5000 : amount < 7500 ? 7500 : amount < 15000 ? 15000 : 0;
+    if (nextTier > 0) {
+      const need = nextTier - amount;
+      labelEl.innerHTML = 'Ещё ' + need + ' ₽ чтобы уменьшить комиссию';
+    } else {
+      labelEl.innerHTML = 'Минимальная комиссия!';
+    }
+  }
+}
+
+/** Валидация и «покупка» */
+function submitTopup() {
+  const amountEl = document.getElementById('topupAmount');
+  const loginEl = document.getElementById('topupLogin');
+  if (!amountEl || !loginEl) return;
+  const amount = parseFloat(amountEl.value) || 0;
+  const login = loginEl.value.trim();
+  if (amount <= 0) {
+    showToast('⚠️ Введите сумму больше 0');
+    return;
+  }
+  if (!login) {
+    showToast('⚠️ Введите логин аккаунта');
+    return;
+  }
+  const total = Math.round(amount * (1 + TOPUP_COMMISSION));
+  showToast(`✅ Заявка на пополнение ${total} ₽ создана!`);
+  addNotification('💳', 'Пополнение сервисов', `Заявка на ${total} ₽ для "${login}" принята`, 'bonus');
+}
+
+/** Инициализация блока пополнения */
+function initTopup() {
+  initTopupTabs();
+  initQuickSums();
+  initPayMethods();
+  initRegionTabs();
+
+  // При любом input или change обновляем цену и прогресс
+  document.addEventListener('input', updateTopupPrice);
+  document.addEventListener('change', updateTopupPrice);
+
+  // При клике на кнопки быстрой суммы — обновление с задержкой
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('quick-sum')) {
+      setTimeout(updateTopupPrice, 50);
+    }
+  });
+
+  // При загрузке — сразу обновляем
+  updateTopupPrice();
+  // Загружаем актуальный курс валют
+  updateExchangeRates();
+  // Обновляем курс каждые 10 минут
+  setInterval(updateExchangeRates, 10 * 60 * 1000);
+  if (document.readyState === 'complete') {
+    setTimeout(updateTopupPrice, 100);
+  } else {
+    window.addEventListener('load', function() { setTimeout(updateTopupPrice, 100); });
+  }
+}
+window.initTopup = initTopup;
+window.submitTopup = submitTopup;
+window.updateTopupPrice = updateTopupPrice;
+
+/** Получение актуального курса валют к рублю и обновление на странице */
+function updateExchangeRates() {
+  const usdEl = document.getElementById('fxUsd');
+  const eurEl = document.getElementById('fxEur');
+  const cnyEl = document.getElementById('fxCny');
+  if (!usdEl && !eurEl && !cnyEl) return;
+
+  // Функция отображения курса с округлением до сотых
+  function apply(usd, eur, cny) {
+    if (usdEl && usd) usdEl.textContent = usd.toFixed(2) + ' ₽';
+    if (eurEl && eur) eurEl.textContent = eur.toFixed(2) + ' ₽';
+    if (cnyEl && cny) cnyEl.textContent = cny.toFixed(2) + ' ₽';
+  }
+
+  // Попытка 1: бесплатный API exchangerate-api (USD/EUR/CNY → RUB)
+  fetch('https://open.er-api.com/v6/latest/RUB')
+    .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+    .then(data => {
+      if (!data || data.result !== 'success' || !data.rates) throw new Error('bad data');
+      // API отдаёт 1 RUB = X USD, инвертируем в цену за 1 USD
+      const usd = 1 / data.rates.USD;
+      const eur = 1 / data.rates.EUR;
+      const cny = 1 / data.rates.CNY;
+      apply(usd, eur, cny);
+    })
+    .catch(() => {
+      // Попытка 2: API ЦБ РФ (ежедневные официальные курсы)
+      fetch('https://www.cbr-xml-daily.ru/daily_json.js')
+        .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+        .then(d => {
+          if (!d || !d.Valute) throw new Error('bad data');
+          const usd = d.Valute.USD && d.Valute.USD.Value;
+          const eur = d.Valute.EUR && d.Valute.EUR.Value;
+          // CNY берём из ЦБ
+          let cny = d.Valute.CNY && d.Valute.CNY.Value;
+          if (!cny) cny = usd ? usd / 7.2 : null; // аппроксимация CNY через USD
+          apply(usd, eur, cny);
+        })
+        .catch(() => {
+          // Попытка 3: другой бесплатный API (exchangerate.host)
+          fetch('https://api.exchangerate-api.com/v4/latest/USD')
+            .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+            .then(d => {
+              if (!d || !d.rates || !d.rates.RUB) throw new Error('bad data');
+              const usd = d.rates.RUB;
+              const eur = d.rates.RUB / d.rates.EUR;
+              const cny = d.rates.RUB / d.rates.CNY;
+              apply(usd, eur, cny);
+            })
+            .catch(() => {
+              // Все API недоступны — используем актуальные приближённые значения
+              apply(88.5, 96.2, 12.4);
+            });
+        });
+    });
+}
+window.updateExchangeRates = updateExchangeRates;
+
+/** Открывает модальное окно с инструкцией «Как узнать логин Steam?» */
+function openSteamLoginHelp() {
+  const modal = document.getElementById('steamLoginHelpModal');
+  if (modal) modal.classList.add('active');
+}
+window.openSteamLoginHelp = openSteamLoginHelp;
+
+// ================================================================
+// СПОСОБ ОПЛАТЫ — переключение «Картой» / «СБП»
+// ================================================================
+function initPayMethods() {
+  const methods = document.querySelectorAll('.pay-method');
+  if (!methods.length) return;
+  methods.forEach(btn => {
+    btn.addEventListener('click', function() {
+      methods.forEach(m => m.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+}
+
+/** Получить выбранный способ оплаты: 'card' | 'sbp' */
+function getSelectedPayMethod() {
+  const active = document.querySelector('.pay-method.active');
+  return active ? active.dataset.method : 'card';
+}
+
+/** Обработка нажатия «Оплатить» */
+function submitPayment() {
+  // Проверка логина
+  const loginEl = document.getElementById('topupLogin');
+  if (!loginEl || !loginEl.value.trim()) {
+    showToast('⚠️ Введите логин аккаунта Steam');
+    if (loginEl) {
+      loginEl.focus();
+      loginEl.classList.add('input-error');
+      loginEl.style.borderColor = '#ff6b6b';
+      loginEl.style.boxShadow = '0 0 0 3px rgba(255, 107, 107, 0.2)';
+      setTimeout(() => {
+        loginEl.classList.remove('input-error');
+        loginEl.style.borderColor = '';
+        loginEl.style.boxShadow = '';
+      }, 3000);
+    }
+    return;
+  }
+  const agree = document.getElementById('payAgree');
+  const rules = document.getElementById('legalRules');
+  const promo = document.getElementById('payPromo');
+  if (agree && !agree.checked) {
+    showToast('⚠️ Подтвердите согласие с офертой об оказании услуг');
+    return;
+  }
+  if (rules && !rules.checked) {
+    showToast('⚠️ Подтвердите, что ознакомлены с правилами оплаты и условиями возврата');
+    return;
+  }
+  const method = getSelectedPayMethod();
+  // Если выбран СБП — открываем окно с QR-кодом для оплаты
+  if (method === 'sbp') {
+    openQRPayment();
+    return;
+  }
+  // Если выбрана карта — открываем окно ввода банковской карты
+  if (method === 'card') {
+    openCardPayment();
+    return;
+  }
+  const promoText = promo && promo.value ? promo.value.trim() : 'без промокода';
+  showToast('✅ Заявка на оплату создана (' + promoText + ')');
+  addNotification('💳', 'Оплата', 'Заявка на оплату принята', 'bonus');
+}
+
+/** Открыть окно оплаты через СБП с QR-кодом */
+function openQRPayment() {
+  const amountEl = document.getElementById('topupAmount');
+  const amount = amountEl ? (parseFloat(amountEl.value) || 0) : 0;
+  // Расчёт итоговой суммы с комиссией (как в панели оплаты)
+  let feePercent = 7.4;
+  if (amount >= 15000) feePercent = 2;
+  else if (amount >= 7500) feePercent = 3.5;
+  else if (amount >= 5000) feePercent = 5;
+  else if (amount >= 3000) feePercent = 6;
+  else if (amount >= 2000) feePercent = 6.5;
+  const total = Math.round(amount * (1 + feePercent / 100));
+  // Показываем итоговую сумму к оплате в QR-коде
+  const amountBox = document.getElementById('qrAmount');
+  if (amountBox) {
+    amountBox.innerHTML = (amount > 0 ? total : 500) + ' ₽' +
+      `<div class="qr-amount-detail">сумма ${(amount > 0 ? amount : 500)} ₽ + комиссия ${feePercent}%</div>`;
+  }
+  generateQR();
+  openModal('qrPaymentModal');
+  startQRCountdown();
+}
+
+/** Генерация псевдо-QR-кода (детерминированный узор) */
+function generateQR() {
+  const grid = document.getElementById('qrGrid');
+  if (!grid) return;
+  const size = 21; // 21x21 модулей, как у настоящего QR
+  let cells = '';
+  // Детерминированный генератор на основе времени (меняется каждую генерацию)
+  let seed = Date.now() % 100000;
+  function rand() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      // Три угловых маркера (как у QR)
+      const inFinder = (x < 7 && y < 7) || (x >= size - 7 && y < 7) || (x < 7 && y >= size - 7);
+      let dark = rand() > 0.48;
+      if (inFinder) {
+        // Угловой квадрат
+        const fx = x % 7, fy = y % 7;
+        dark = (fx === 0 || fx === 6 || fy === 0 || fy === 6 || (fx >= 2 && fx <= 4 && fy >= 2 && fy <= 4));
+      } else if (x === 6 || y === 6) {
+        dark = (x + y) % 2 === 0; // линия разделителя
+      }
+      cells += `<div class="qr-cell ${dark ? 'dark' : ''}"></div>`;
+    }
+  }
+  grid.innerHTML = cells;
+}
+
+/** Таймер истечения QR-кода (5 минут) */
+let qrTimerInterval = null;
+function startQRCountdown() {
+  if (qrTimerInterval) clearInterval(qrTimerInterval);
+  let seconds = 300; // 5:00
+  const timerEl = document.getElementById('qrTimer');
+  function tick() {
+    if (!timerEl) { clearInterval(qrTimerInterval); return; }
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    timerEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    seconds--;
+    if (seconds < 0) {
+      clearInterval(qrTimerInterval);
+      timerEl.textContent = 'Истёк — обновите код';
+      generateQR(); // автоматически обновляем
+      startQRCountdown();
+    }
+  }
+  tick();
+  qrTimerInterval = setInterval(tick, 1000);
+}
+window.initPayMethods = initPayMethods;
+window.submitPayment = submitPayment;
+window.openQRPayment = openQRPayment;
+window.generateQR = generateQR;
+
+// ================================================================
+// ОПЛАТА КАРТОЙ — модальное окно с формой банковской карты
+// ================================================================
+/** Открыть окно оплаты картой */
+function openCardPayment() {
+  const amountEl = document.getElementById('topupAmount');
+  const amount = amountEl ? (parseFloat(amountEl.value) || 0) : 0;
+  let feePercent = 7.4;
+  if (amount >= 15000) feePercent = 2;
+  else if (amount >= 7500) feePercent = 3.5;
+  else if (amount >= 5000) feePercent = 5;
+  else if (amount >= 3000) feePercent = 6;
+  else if (amount >= 2000) feePercent = 6.5;
+  const total = Math.round(amount * (1 + feePercent / 100));
+  const totalEl = document.getElementById('cardPayTotal');
+  if (totalEl) totalEl.textContent = (amount > 0 ? total : 500) + ' ₽';
+  // Сброс формы при открытии
+  const num = document.getElementById('cardNumber');
+  if (num) { num.value = ''; }
+  const exp = document.getElementById('cardExpiry');
+  if (exp) { exp.value = ''; }
+  const cvv = document.getElementById('cardCvv');
+  if (cvv) { cvv.value = ''; }
+  const holder = document.getElementById('cardHolder');
+  if (holder) { holder.value = ''; }
+  updateCardDisplay();
+  openModal('cardPaymentModal');
+}
+window.openCardPayment = openCardPayment;
+
+/** Форматирование номера карты: группы по 4 цифры */
+function formatCardNumber(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 16);
+  input.value = v.replace(/(.{4})/g, '$1 ').trim();
+  updateCardDisplay();
+}
+
+/** Форматирование срока действия: ММ/ГГ */
+function formatCardExpiry(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 4);
+  if (v.length >= 3) {
+    v = v.slice(0, 2) + '/' + v.slice(2);
+  }
+  input.value = v;
+  updateCardDisplay();
+}
+
+/** Ограничение CVV: только цифры */
+function formatCardCvv(input) {
+  input.value = input.value.replace(/\D/g, '').slice(0, 3);
+}
+
+/** Обновление виртуальной карты на основе ввода */
+function updateCardDisplay() {
+  const num = document.getElementById('cardNumber');
+  const numDisp = document.getElementById('cardNumberDisplay');
+  if (numDisp && num) {
+    numDisp.textContent = num.value.trim() || '•••• •••• •••• ••••';
+  }
+  const exp = document.getElementById('cardExpiry');
+  const expDisp = document.getElementById('cardExpiryDisplay');
+  if (expDisp && exp) {
+    expDisp.textContent = exp.value.trim() || 'ММ/ГГ';
+  }
+  const holder = document.getElementById('cardHolder');
+  const holderDisp = document.getElementById('cardHolderDisplay');
+  if (holderDisp && holder) {
+    holderDisp.textContent = holder.value.trim().toUpperCase() || 'ДЕРЖАТЕЛЬ КАРТЫ';
+  }
+}
+window.updateCardDisplay = updateCardDisplay;
+
+/** Обработка оплаты картой */
+function processCardPayment() {
+  const num = document.getElementById('cardNumber');
+  const exp = document.getElementById('cardExpiry');
+  const cvv = document.getElementById('cardCvv');
+  const holder = document.getElementById('cardHolder');
+  // Валидация
+  if (!num || num.value.replace(/\s/g, '').length !== 16) {
+    showToast('⚠️ Введите корректный номер карты (16 цифр)');
+    if (num) num.focus();
+    return;
+  }
+  if (!exp || exp.value.length !== 5) {
+    showToast('⚠️ Введите срок действия карты (ММ/ГГ)');
+    if (exp) exp.focus();
+    return;
+  }
+  if (!cvv || cvv.value.length !== 3) {
+    showToast('⚠️ Введите CVV-код (3 цифры)');
+    if (cvv) cvv.focus();
+    return;
+  }
+  if (!holder || !holder.value.trim()) {
+    showToast('⚠️ Введите имя держателя карты');
+    if (holder) holder.focus();
+    return;
+  }
+  const totalEl = document.getElementById('cardPayTotal');
+  const total = totalEl ? totalEl.textContent : '0 ₽';
+  closeModal('cardPaymentModal');
+  showToast(`✅ Оплата картой на сумму ${total} прошла успешно!`);
+  addNotification('💳', 'Оплата картой', `Платёж ${total} подтверждён`, 'bonus');
+  createConfetti();
+}
+window.processCardPayment = processCardPayment;
+window.formatCardNumber = formatCardNumber;
+window.formatCardExpiry = formatCardExpiry;
+window.formatCardCvv = formatCardCvv;
+
+/** Анимированный счётчик пополнений */
+function animateRefillCounter() {
+  const el = document.getElementById('refillCounter');
+  if (!el) return;
+  const target = 31448536;
+  const duration = 3000;
+  const start = performance.now();
+  function step(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // Плавное замедление (ease-out)
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(eased * target);
+    el.textContent = current.toLocaleString('ru-RU');
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// Запуск после загрузки DOM
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    initTopup();
+    animateRefillCounter();
+    initResponsiveScale();
+  });
+} else {
+  initTopup();
+  animateRefillCounter();
+  initResponsiveScale();
+}
+
+/**
+ * Адаптивное масштабирование для мобильных устройств.
+ * При уменьшении окна (вплоть до 100%) весь контент сайта
+ * пропорционально уменьшается, чтобы всё вмещалось без переполнения.
+ * Работает только на мобильных экранах (<= 820px).
+ */
+function initResponsiveScale() {
+  function applyScale() {
+    const width = window.innerWidth;
+    // Масштабирование только для мобильных (планшеты и телефоны)
+    if (width > 820) return;
+    // Базовый масштаб: на 375px = 1, на 320px = 0.85, на 250px = 0.66 и т.д.
+    // Чем меньше ширина — тем сильнее уменьшаем, чтобы всё вмещалось
+    const scale = Math.min(1, width / 375);
+    // Применяем масштаб к корневому элементу (уменьшается всё содержимое)
+    document.documentElement.style.zoom = (scale * 100) + '%';
+  }
+  // Применяем сразу и при изменении размера окна
+  applyScale();
+  window.addEventListener('resize', applyScale);
+}
+window.initResponsiveScale = initResponsiveScale;
 
