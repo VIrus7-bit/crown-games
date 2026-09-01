@@ -164,12 +164,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function acceptCookies() {
     document.getElementById('cookieBanner').classList.remove('show');
     localStorage.setItem('cookiesAccepted', 'true');
-    showToast('Спасибо! Настройки сохранены.');
+    showToast(t('toast_cookies_saved'));
 }
 function declineCookies() {
     document.getElementById('cookieBanner').classList.remove('show');
     localStorage.setItem('cookiesAccepted', 'false');
-    showToast('Вы отклонили использование cookie.');
+    showToast(t('toast_cookies_declined'));
 }
 if (!localStorage.getItem('cookiesAccepted')) {
     setTimeout(() => {
@@ -191,7 +191,7 @@ function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('customTheme', theme);
     document.getElementById('themeCustomizer').classList.remove('show');
-    showToast(`🎨 Тема изменена на ${theme.charAt(0).toUpperCase() + theme.slice(1)}`);
+    showToast(t('toast_theme_changed') + theme.charAt(0).toUpperCase() + theme.slice(1));
 }
 if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-theme');
 const savedTheme = localStorage.getItem('customTheme');
@@ -235,8 +235,10 @@ function navigateTo(page) {
     const navLink = document.querySelector(`.nav a[data-page="${page}"]`);
     if (navLink) navLink.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.getElementById('mainNav').classList.remove('open');
-    document.getElementById('burgerBtn').classList.remove('active');
+    const navEl = document.getElementById('mainNav');
+    if (navEl) navEl.classList.remove('open');
+    const burgerEl = document.getElementById('burgerBtn');
+    if (burgerEl) burgerEl.classList.remove('active');
     // Перерендер каталога и слайдера при переходе на соответствующие страницы
     if (page === 'games' && typeof renderCatalog === 'function') {
         try { renderCatalog(); } catch(e){}
@@ -277,235 +279,83 @@ function toggleLangDropdown(e) {
   document.getElementById('langDropdown').classList.toggle('open');
 }
 /** Установить язык и применить переводы */
-function setLang(lang, e) {
+function setLanguage(lang, e) {
   if (e) e.stopPropagation();
   document.getElementById('langDropdown').classList.remove('open');
+  currentLanguage = lang;
+  localStorage.setItem('siteLanguage', lang);
   document.documentElement.lang = lang;
-  const label = document.getElementById('langLabel');
-  if (label) label.textContent = lang.toUpperCase();
-  try { localStorage.setItem('crownLang', lang); } catch (e) {}
-  // Подсветка активного языка в дропдауне
-  document.querySelectorAll('.lang-dropdown button').forEach(b => b.classList.remove('active'));
-  const activeBtn = document.querySelector(`.lang-dropdown button[onclick*="'${lang}'"]`);
-  if (activeBtn) activeBtn.classList.add('active');
-  // Вызываем существующую функцию перевода со всеми подменю
-  if (typeof changeLanguage === 'function') changeLanguage(lang);
+  document.getElementById('langLabel').textContent = lang.toUpperCase();
+  applyTranslations(lang);
+  showToast(`🌐 ${lang === 'ru' ? 'Русский' : lang === 'en' ? 'English' : '中文'}`);
 }
-window.toggleLangDropdown = toggleLangDropdown;
-window.setLang = setLang;
+window.setLanguage = setLanguage;
 
-// Закрытие дропдауна при клике вне
+function loadLanguage() {
+  const saved = localStorage.getItem('siteLanguage');
+  if (saved && translations[saved]) {
+    currentLanguage = saved;
+    document.documentElement.lang = saved;
+    document.getElementById('langLabel').textContent = saved.toUpperCase();
+    applyTranslations(saved);
+  }
+}
+window.loadLanguage = loadLanguage;
+
+// Закрытие дропдауна языка при клике вне
 document.addEventListener('click', function(e) {
-  if (!e.target.closest('.lang-select')) {
+  if (!e.target.closest('.header-lang')) {
     const dd = document.getElementById('langDropdown');
     if (dd) dd.classList.remove('open');
   }
 });
-document.getElementById('burgerBtn').addEventListener('click', function() {
+const burgerBtn = document.getElementById('burgerBtn');
+if (burgerBtn) {
+  burgerBtn.addEventListener('click', function() {
     this.classList.toggle('active');
     document.getElementById('mainNav').classList.toggle('open');
-});
-
-// ================================================================
-// ПОИСК
-// ================================================================
-const allGames = [
-    'Starburst', 'Book of Dead', "Gonzo's Quest", 'Mega Moolah', 'Twin Spin',
-    'Immortal Romance', "Dragon's Luck", "Luck o' the Irish", 'Castle of Fire', 'Crown Royale',
-    'Sweet Bonanza', 'Bonanza', 'Wolf Gold', 'Rainbow Riches', 'Unicorn Magic',
-    'Magic Mirror', 'Paradise', 'Star Clusters', 'Fire & Steel', 'Ocean Treasure',
-    'Retro Arcade', "Champion's Gold", 'Moonlight', 'Wheel of Fortune', 'Tiki Tiki', 'Blood Suckers'
-];
-function fuzzySearch(query, items) {
-    if (!query || query.length < 1) return [];
-    const queryLower = query.toLowerCase().trim();
-    const results = [];
-    for (const item of items) {
-        const itemLower = item.toLowerCase();
-        let score = 0;
-        if (itemLower === queryLower) score += 100;
-        if (itemLower.startsWith(queryLower)) score += 50;
-        if (itemLower.includes(queryLower)) score += 30;
-        const queryWords = queryLower.split(' ');
-        const itemWords = itemLower.split(' ');
-        for (const qWord of queryWords) {
-            if (qWord.length < 1) continue;
-            for (const iWord of itemWords) {
-                if (iWord.includes(qWord)) score += 15;
-                if (iWord.length > 2 && qWord.length > 2) {
-                    const distance = levenshteinDistance(qWord, iWord);
-                    if (distance <= 2) score += 8;
-                    else if (distance <= 3) score += 4;
-                }
-            }
-        }
-        const itemFirstLetters = itemWords.map(w => w[0]).join('');
-        if (itemFirstLetters.includes(queryLower.replace(/\s/g, ''))) score += 10;
-        if (score > 0) results.push({ name: item, score: score });
-    }
-    results.sort((a, b) => b.score - a.score);
-    return results.map(r => r.name);
-}
-function levenshteinDistance(a, b) {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
-    const matrix = [];
-    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-    for (let i = 1; i <= b.length; i++) {
-        for (let j = 1; j <= a.length; j++) {
-            if (b[i-1] === a[j-1]) {
-                matrix[i][j] = matrix[i-1][j-1];
-            } else {
-                matrix[i][j] = Math.min(
-                    matrix[i-1][j-1] + 1,
-                    matrix[i][j-1] + 1,
-                    matrix[i-1][j] + 1
-                );
-            }
-        }
-    }
-    return matrix[b.length][a.length];
-}
-function searchGames(query) {
-    const results = document.getElementById('searchResults');
-    const clearBtn = document.getElementById('searchClear');
-    if (query && query.trim()) {
-        clearBtn.classList.add('visible');
-        const q = query.trim().toLowerCase();
-        // Ищем по всем 551 играм из GAMES
-        let matches;
-        if (typeof GAMES !== 'undefined' && GAMES.length) {
-            matches = GAMES
-                .filter(g => g.name.toLowerCase().includes(q))
-                .slice(0, 8);
-        } else {
-            matches = fuzzySearch(query.trim(), allGames).slice(0, 8).map(n => ({ name: n }));
-        }
-        if (matches.length === 0) {
-            results.innerHTML = '<div class="empty-result">Ничего не найдено</div>';
-            results.classList.add('active');
-        } else {
-            results.innerHTML = matches.map(g => {
-                const gIdx = typeof GAMES !== 'undefined' ? GAMES.indexOf(g) : 0;
-                const p = typeof gamePrice === 'function' ? gamePrice(g, gIdx) : null;
-                const priceTxt = p ? (p.discount > 0 ? `<span class="search-discount">-${p.discount}%</span> <span class="search-price">${p.price} ₽</span>` : `<span class="search-price">${p.price} ₽</span>`) : '';
-                return `
-                <div class="result-item" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}'); clearSearch();">
-                    <div class="icon"><img src="images/games/${g.img || ''}" alt="${g.name}" onerror="this.style.display='none';this.parentElement.textContent='🎮';"></div>
-                    <div class="info"><h4>${g.name}</h4><span class="search-cat">${g.cat || ''}</span></div>
-                    ${priceTxt}
-                </div>
-            `;}).join('');
-            results.classList.add('active');
-        }
-    } else {
-        clearBtn.classList.remove('visible');
-        results.classList.remove('active');
-    }
-}
-function clearSearch() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('searchResults').classList.remove('active');
-    document.getElementById('searchClear').classList.remove('visible');
+  });
 }
 
-document.addEventListener('click', function(e) {
-    const searchWrap = document.querySelector('.search-wrap');
-    if (searchWrap && !searchWrap.contains(e.target)) {
-        document.getElementById('searchResults').classList.remove('active');
-    }
-});
-
 // ================================================================
-// ГОЛОСОВОЙ ПОИСК
+// ГОЛОСОВОЙ ПОИСК НА СТРАНИЦЕ «ИГРЫ»
 // ================================================================
-let recognition = null;
-let isRecording = false;
-let micPermissionGranted = localStorage.getItem('micPermission') === 'granted';
-if (micPermissionGranted) initSpeechRecognition();
-function initSpeechRecognition() {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SR();
-        recognition.lang = 'ru-RU';
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.onstart = function() {
-            isRecording = true;
-            document.getElementById('voiceSearchBtn').classList.add('recording');
-            document.getElementById('voiceIndicator').classList.add('show');
-        };
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            document.getElementById('searchInput').value = transcript;
-            searchGames(transcript);
-            showToast(`🔊 Поиск: "${transcript}"`);
-            stopRecording();
-        };
-        recognition.onerror = function(event) {
-            if (event.error === 'not-allowed') {
-                micPermissionGranted = false;
-                localStorage.setItem('micPermission', 'denied');
-                showToast('❌ Доступ к микрофону запрещён.');
-            } else {
-                showToast('🔇 Голосовой поиск не распознал речь.');
-            }
-            stopRecording();
-        };
-        recognition.onend = function() { stopRecording(); };
-    }
-}
-function stopRecording() {
-    isRecording = false;
-    document.getElementById('voiceSearchBtn').classList.remove('recording');
-    document.getElementById('voiceIndicator').classList.remove('show');
-}
-function voiceSearch() {
-    if (!micPermissionGranted) {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            try {
-                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-                const tempRec = new SR();
-                tempRec.lang = 'ru-RU';
-                tempRec.continuous = false;
-                tempRec.interimResults = false;
-                tempRec.onstart = function() {
-                    micPermissionGranted = true;
-                    localStorage.setItem('micPermission', 'granted');
-                    initSpeechRecognition();
-                    showToast('🎤 Микрофон активирован!');
-                    tempRec.stop();
-                    setTimeout(() => voiceSearch(), 300);
-                };
-                tempRec.onerror = function() {
-                    showToast('❌ Доступ к микрофону запрещён.');
-                    localStorage.setItem('micPermission', 'denied');
-                };
-                tempRec.start();
-                showToast('🎤 Запрос разрешения на микрофон...');
-            } catch(e) {
-                showToast('⚠️ Ошибка доступа к микрофону');
-            }
-        } else {
-            showToast('❌ Голосовой поиск не поддерживается');
-        }
+/** Голосовой поиск на странице «Игры» — заполняет поиск каталога */
+function gamesVoiceSearch() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showToast(t('toast_voice_unsupported'));
         return;
     }
-    if (recognition && !isRecording) {
-        try { recognition.start(); } catch(e) {
-            if (e.message && e.message.includes('already started')) {
-                showToast('⏳ Уже слушаю...');
-            } else {
-                showToast('⚠️ Ошибка запуска микрофона');
+    try {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SR();
+        rec.lang = 'ru-RU';
+        rec.continuous = false;
+        rec.interimResults = false;
+        rec.onstart = function() {
+            showToast(t('toast_listening'));
+        };
+        rec.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            const input = document.getElementById('gamesSearchInput');
+            if (input) {
+                input.value = transcript;
+                filterGamesSearch(transcript);
             }
-        }
-    } else if (isRecording) {
-        showToast('⏳ Уже слушаю...');
-    } else {
-        showToast('❌ Голосовой поиск не поддерживается');
+            showToast(t('toast_searching') + transcript + '"');
+        };
+        rec.onerror = function() {
+            showToast(t('toast_voice_failed'));
+        };
+        rec.onend = function() {
+            // ничего не делаем при завершении
+        };
+        rec.start();
+    } catch(e) {
+        showToast(t('toast_mic_error'));
     }
 }
+window.gamesVoiceSearch = gamesVoiceSearch;
 
 // ================================================================
 // СИСТЕМА УВЕДОМЛЕНИЙ В РЕАЛЬНОМ ВРЕМЕНИ
@@ -540,42 +390,6 @@ function removeNotification(id) {
 // Фейковые уведомления удалены — уведомления появляются только по действиям пользователя.
 
 // ================================================================
-// ДЕМО-РЕЖИМ ИГР С ВИРТУАЛЬНЫМИ КРЕДИТАМИ
-// ================================================================
-let virtualBalance = 1000;
-let demoModeActive = false;
-function startDemoMode(gameName) {
-    demoModeActive = true;
-    virtualBalance = 1000;
-    showToast(`🎮 Демо-режим "${gameName}" активирован! Баланс: ${virtualBalance} ₽`);
-    addNotification('🎮', 'Демо-режим', `Игра "${gameName}" запущена. Виртуальный баланс: ${virtualBalance} ₽`, 'info');
-}
-function spinDemo(bet = 10) {
-    if (!demoModeActive) {
-        showToast('⚠️ Сначала активируйте демо-режим');
-        return;
-    }
-    if (virtualBalance < bet) {
-        showToast('❌ Недостаточно виртуальных кредитов!');
-        return;
-    }
-    virtualBalance -= bet;
-    const win = Math.random() < 0.3 ? bet * (2 + Math.random() * 8) : 0;
-    virtualBalance += win;
-    if (win > 0) {
-        showToast(` Вы выиграли ${Math.round(win)} ₽! Баланс: ${Math.round(virtualBalance)} ₽`);
-        createConfetti();
-        addNotification('🎉', 'Демо-выигрыш!', `+${Math.round(win)} ₽ виртуальных кредитов`, 'win');
-    } else {
-        showToast(`😔 Проигрыш ${bet} ₽. Баланс: ${Math.round(virtualBalance)} ₽`);
-    }
-    if (virtualBalance <= 0) {
-        showToast('💸 Виртуальные кредиты закончились! Начните заново.');
-        demoModeActive = false;
-    }
-}
-
-// ================================================================
 // ЧАТ
 // ================================================================
 let chatNotifCount = 0;
@@ -598,11 +412,11 @@ function sendMessage() {
     container.scrollTop = container.scrollHeight;
     setTimeout(() => {
         const botMsgs = [
-            'Спасибо за сообщение! Чем ещё могу помочь?',
-            'Отличный вопрос! Давайте разберёмся.',
-            'Я всегда рад помочь вам!',
-            'Сейчас уточню информацию для вас.',
-            'Выберите интересующую вас тему, и я помогу.'
+            t('chat_bot_1'),
+            t('chat_bot_2'),
+            t('chat_bot_3'),
+            t('chat_bot_4'),
+            t('chat_bot_5')
         ];
         const reply = botMsgs[Math.floor(Math.random() * botMsgs.length)];
         container.innerHTML += `<div class="msg bot">${reply}<span class="time">${new Date().toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })}</span></div>`;
@@ -626,13 +440,13 @@ function toggleFav(el) {
         favorites.splice(idx, 1);
         el.classList.remove('active');
         el.textContent = '♡';
-        showToast('Удалено из избранного');
+        showToast(t('toast_fav_removed'));
     } else {
         favorites.push(game);
         el.classList.add('active');
         el.textContent = '♥';
-        showToast('Добавлено в избранное');
-        addNotification('⭐', 'В избранное!', `Игра "${game}" добавлена в избранное`, 'info');
+        showToast(t('toast_fav_added'));
+        addNotification('⭐', t('notif_fav'), t('notif_fav_added_text') + game + '"', 'info');
     }
     localStorage.setItem('favorites', JSON.stringify(favorites));
     updateFavoritesUI();
@@ -664,17 +478,23 @@ setTimeout(updateFavoritesUI, 100);
 // ================================================================
 // ФИЛЬТРЫ КАТАЛОГА
 // ================================================================
-function filterGames(type, btn) {
-    document.querySelectorAll('.catalog-filters button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.catalog-item').forEach(item => {
-        if (type === 'all' || item.dataset.type === type) {
-            item.style.display = 'block';
-        } else {
-            item.style.display = 'none';
-        }
+/** Поиск по каталогу игр (страница «Игры») */
+function filterGamesSearch(query) {
+    const items = document.querySelectorAll('#catalogGrid .catalog-item');
+    const q = query.trim().toLowerCase();
+    items.forEach(item => {
+        const name = (item.getAttribute('data-game') || item.querySelector('h4').textContent).toLowerCase();
+        const show = !q || name.includes(q);
+        item.style.display = show ? 'block' : 'none';
     });
 }
+/** Очистка поиска в каталоге игр */
+function clearGamesSearch() {
+    document.getElementById('gamesSearchInput').value = '';
+    document.querySelectorAll('#catalogGrid .catalog-item').forEach(item => item.style.display = 'block');
+}
+window.filterGamesSearch = filterGamesSearch;
+window.clearGamesSearch = clearGamesSearch;
 
 // ================================================================
 // ПРОФИЛЬ — ВКЛАДКИ
@@ -708,9 +528,9 @@ function updateProfileName(name) {
 }
 
 // ================================================================
-// ПРОФИЛЬ — ЭКСПОРТ PDF
+// ПРОФИЛЬ — ЭКСПОРТ TXT
 // ================================================================
-function exportProfilePDF() {
+function exportProfileTXT() {
     const name = document.getElementById('profileName').textContent;
     const email = document.getElementById('settingsEmail').value;
     const lang = document.getElementById('languageSelect').value;
@@ -754,236 +574,916 @@ Crown Games — Королевская игра
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
-    showToast('📄 Профиль экспортирован! (TXT-файл)');
+    showToast(t('toast_exported'));
 }
 
 // ================================================================
 // ПРОФИЛЬ — НАСТРОЙКИ (ЯЗЫК)
 // ================================================================
 let currentLanguage = localStorage.getItem('siteLanguage') || 'ru';
-function changeLanguage(lang) {
-    currentLanguage = lang;
-    localStorage.setItem('siteLanguage', lang);
-    const translations = {
-        ru: {
-            title: 'Crown — Премиальный магазин игр',
-            home: 'Главная',
-            games: 'Игры',
-            promo: 'Акции',
-            vip: 'VIP',
-            leaderboard: 'Турниры',
-            blog: 'Блог',
-            affiliate: 'Партнёры',
-            profile: 'Профиль',
-            about: 'О нас',
-            contacts: 'Контакты',
-            searchPlaceholder: 'Поиск игр...',
-            login: 'Войти',
-            register: 'Регистрация',
-            cart: 'Корзина',
-            emptyCart: 'Корзина пуста',
-            checkout: 'Оформить заказ',
-            continue: 'Продолжить',
-            total: 'Итого:',
-            welcome: 'Добро пожаловать!',
-            playNow: 'Играть сейчас',
-            promotions: 'Акции',
-            topGames: 'Топ игр',
-            popularGames: 'Популярные игры',
-            latestWins: 'Последние выигрыши',
-            viewAll: 'Смотреть все',
-            catalog: 'Каталог игр',
-            all: 'Все',
-            slots: 'Слоты',
-            table: 'Настольные',
-            live: 'Live',
-            jackpot: 'Джекпоты',
-            new: 'Новые',
-            welcomePackage: 'Приветственный пакет',
-            cashback: 'Кэшбэк',
-            exclusiveVIP: 'Эксклюзив для VIP',
-            blogNews: 'Блог и новости',
-            strategies: 'Стратегии',
-            news: 'Новинки',
-            interview: 'Интервью',
-            readMore: 'Читать далее',
-            affiliateProgram: 'Партнёрская программа',
-            earnWithCrown: 'Зарабатывайте с Crown',
-            inviteFriends: 'Приглашайте друзей и получайте до 30% от их выигрышей навсегда!',
-            shareLink: 'Поделиться ссылкой',
-            instantPayouts: 'Мгновенные выплаты',
-            statistics: 'Статистика',
-            vipStatus: 'VIP-статус',
-            history: 'История',
-            favorites: 'Избранное',
-            achievements: 'Достижения',
-            settings: 'Настройки',
-            name: 'Имя',
-            email: 'Email',
-            language: 'Язык',
-            saveSettings: 'Сохранить настройки',
-            contactUs: 'Свяжитесь с нами',
-            send: 'Отправить',
-            yourName: 'Ваше имя',
-            yourMessage: 'Ваше сообщение',
-            aboutUs: 'О нас',
-            royalStatus: 'Королевский статус',
-            security: 'Безопасность',
-            speed: 'Скорость',
-            choice: 'Выбор',
-            modernProtection: 'Современная защита данных',
-            instantWithdrawals: 'Мгновенные выплаты',
-            topProviders: '1500+ игр от топ-провайдеров',
-            profileName: 'Игрок',
-            liveCasino: 'Стримы',
-            playerStats: 'Статистика игрока',
-            totalGames: 'Всего игр',
-            totalWins: 'Выигрыши',
-            totalLosses: 'Проигрыши',
-            winRate: 'Процент побед',
-            demoMode: 'Демо-режим'
-        },
-        en: {
-            title: 'Crown — Premium Game Store',
-            home: 'Home',
-            games: 'Games',
-            promo: 'Promotions',
-            vip: 'VIP',
-            leaderboard: 'Leaderboard',
-            blog: 'Blog',
-            affiliate: 'Affiliate',
-            profile: 'Profile',
-            about: 'About',
-            contacts: 'Contacts',
-            searchPlaceholder: 'Search games...',
-            login: 'Login',
-            register: 'Register',
-            cart: 'Cart',
-            emptyCart: 'Cart is empty',
-            checkout: 'Checkout',
-            continue: 'Continue',
-            total: 'Total:',
-            welcome: 'Welcome!',
-            playNow: 'Play Now',
-            promotions: 'Promotions',
-            topGames: 'Top Games',
-            popularGames: 'Popular Games',
-            latestWins: 'Latest Wins',
-            viewAll: 'View All',
-            catalog: 'Game Catalog',
-            all: 'All',
-            slots: 'Slots',
-            table: 'Table Games',
-            live: 'Live',
-            jackpot: 'Jackpots',
-            new: 'New',
-            welcomePackage: 'Welcome Package',
-            cashback: 'Cashback',
-            exclusiveVIP: 'Exclusive for VIP',
-            blogNews: 'Blog & News',
-            strategies: 'Strategies',
-            news: 'News',
-            interview: 'Interview',
-            readMore: 'Read More',
-            affiliateProgram: 'Affiliate Program',
-            earnWithCrown: 'Earn with Crown',
-            inviteFriends: 'Invite friends and get up to 30% of their winnings forever!',
-            shareLink: 'Share Link',
-            instantPayouts: 'Instant Payouts',
-            statistics: 'Statistics',
-            vipStatus: 'VIP Status',
-            history: 'History',
-            favorites: 'Favorites',
-            achievements: 'Achievements',
-            settings: 'Settings',
-            name: 'Name',
-            email: 'Email',
-            language: 'Language',
-            saveSettings: 'Save Settings',
-            contactUs: 'Contact Us',
-            send: 'Send',
-            yourName: 'Your Name',
-            yourMessage: 'Your Message',
-            aboutUs: 'About Us',
-            royalStatus: 'Royal Status',
-            security: 'Security',
-            speed: 'Speed',
-            choice: 'Choice',
-            modernProtection: 'Modern data protection',
-            instantWithdrawals: 'Instant withdrawals',
-            topProviders: '1500+ games from top providers',
-            profileName: 'Player',
-            liveCasino: 'Live Streams',
-            playerStats: 'Player Statistics',
-            totalGames: 'Total Games',
-            totalWins: 'Wins',
-            totalLosses: 'Losses',
-            winRate: 'Win Rate',
-            demoMode: 'Demo Mode'
+
+const translations = {
+    ru: {
+        // Навигация
+        'nav_home': 'Главная', 'nav_games': 'Игры', 'nav_vip': 'VIP', 'nav_blog': 'Блог',
+        'nav_affiliate': 'Партнёры', 'nav_profile': 'Профиль', 'nav_about': 'О нас', 'nav_contacts': 'Контакты',
+        'auth_login': 'Войти', 'auth_register': 'Регистрация',
+
+        // Хлебные крошки
+        'bread_home': 'Главная', 'bread_games': 'Игры', 'bread_promo': 'Акции', 'bread_vip': 'VIP',
+        'bread_affiliate': 'Партнёры', 'bread_about': 'О нас', 'bread_blog': 'Блог', 'bread_profile': 'Профиль',
+
+        // Баннеры
+        'pwa_install': '— установите приложение', 'pwa_desc': 'Быстрый доступ, push-уведомления и офлайн-режим',
+        'pwa_btn': 'Установить',
+        'cookie_text': '🍪 Мы используем файлы cookie для улучшения вашего опыта. Продолжая использовать сайт, вы соглашаетесь с нашей политикой конфиденциальности.',
+        'cookie_decline': 'Отклонить', 'cookie_accept': 'Принять',
+        'notif_text': '🔔 Включите уведомления, чтобы не пропускать выигрыши и новые бонусы!',
+        'notif_allow': 'Разрешить', 'notif_deny': 'Не сейчас',
+        'voice_listening': '🎤 Слушаю...',
+        'theme_customizer': 'Настройка темы',
+        'theme_gold': 'Золото', 'theme_platinum': 'Платина', 'theme_ruby': 'Рубин', 'theme_sapphire': 'Сапфир',
+        'loader_sub': 'Загружаем игровую вселенную...',
+        'toast_title': 'Уведомление', 'toast_text': 'Текст уведомления',
+
+        // Hero
+        'hero_badge': '✦ Премиум-портал игр',
+        'hero_title1': 'Королевская игра',
+        'hero_title2': 'начинается здесь',
+        'hero_desc': 'Погрузитесь в мир роскоши и азарта. Только лучшие игры, эксклюзивные бонусы и атмосфера высшего статуса.',
+        'hero_play': 'Играть сейчас', 'hero_promo': 'Акции',
+
+        // Пополнение Steam
+        'topup_title': 'Пополни баланс Steam',
+        'topup_subtitle': 'Моментальное пополнение кошелька Стим',
+        'topup_refills': 'пополнений',
+        'region_ru': 'Россия', 'region_kz': 'Казахстан', 'region_sbp': 'СПБ',
+        'discount_current': 'Текущая скидка: <b>-2%</b>',
+        'topup_login_label': 'Логин аккаунта', 'topup_login_hint': 'Как узнать логин?',
+        'topup_login_ph': 'Введите ваш логин',
+        'topup_amount_label': 'Сумма пополнения', 'topup_amount_prefix': 'Получите',
+        'fee_progress_text': 'Ещё 1000 ₽ чтобы уменьшить комиссию', 'fee_commission': 'Включая комиссию ~7.4%',
+        'fee_progress_need': 'Ещё {AMOUNT} ₽ чтобы уменьшить комиссию',
+        'fee_progress_min': 'Минимальная комиссия!',
+        'quick_sum_label': 'Быстрый выбор суммы',
+
+        // Оплата
+        'pay_header': 'Способ <span class="gold">оплаты</span>', 'pay_subtitle': 'Выберите удобный метод',
+        'pay_card': 'Картой', 'pay_sbp': 'СБП',
+        'pay_sum_amount': 'Сумма пополнения', 'pay_sum_fee': 'Комиссия сервиса', 'pay_sum_total': 'Итого к оплате',
+        'pay_promo_label': 'Промокод', 'pay_promo_ph': 'Введите промокод (если есть)',
+        'pay_warning': '⚠️ Для успешной оплаты рекомендуем отключить VPN и перезагрузить страницу',
+        'pay_submit': 'Оплатить',
+        'pay_agree_text': 'Нажимая кнопку «Оплатить», вы соглашаетесь с офертой об оказании услуг',
+        'pay_legal_rules': 'Я ознакомлен(а) с правилами оплаты, условиями возврата и обработки персональных данных',
+
+        // Топ игр и новости
+        'top_title': 'Топ <span class="gold">игр</span>', 'top_viewall': 'Смотреть все →',
+        'news_title': 'Блог и <span class="gold">новости</span>', 'news_tag_new': 'Новинки',
+        'readmore': 'Читать далее →',
+        'news1_title': 'Cyberpunk 2077: масштабное обновление графики',
+        'news1_text': 'Трассировка лучей и новые настройки производительности сделали Найт-Сити ещё красивее. Разработчики выпустили крупный патч, который добавляет поддержку DLSS 4, улучшенные отражения и оптимизацию для видеокарт нового поколения.',
+        'news2_tag': 'Киберспорт',
+        'news2_title': 'Elden Ring: секреты и гайд по сложным боссам',
+        'news2_text': 'Как победить самых сложных боссов Междуземья — проверенные билды и стратегии. В этом гайде мы собрали лучшие советы от профессиональных игроков: какие оружия и заклинания использовать против каждого босса.',
+        'news3_tag': 'Стратегии',
+        'news3_title': 'Dota 2: мета 2025 и лучшие герои',
+        'news3_text': 'Разбор актуальной меты, сильнейшие герои патча и советы по подъёму рейтинга. Мы проанализировали статистику матчей высокого ранга и подготовили список самых эффективных героев для каждой позиции.',
+        'news4_tag': 'Гайд',
+        'news4_title': 'Stardew Valley: лучшие фермерские стратегии',
+        'news4_text': 'Как быстро разбогатеть, какие культуры выгоднее и секреты общения с жителями. В этом подробном руководстве мы расскажем о самых прибыльных культурах для каждого сезона.',
+        'news5_tag': 'Обзор',
+        'news5_title': 'Red Dead Redemption 2: почему это шедевр',
+        'news5_text': 'Разбор открытого мира, истории и геймплея самой атмосферной игры последних лет. Red Dead Redemption 2 продолжает удерживать планку лучшей игры в жанре вестерн.',
+        'news6_tag': 'Советы',
+        'news6_title': "Baldur's Gate 3: гайд по созданию персонажа",
+        'news6_text': 'Лучшие классы, расы и билды для новичков и опытных игроков. Создание персонажа в Baldur\'s Gate 3 — один из самых важных этапов игры.',
+        'guide_badge': '✦ Гид недели',
+        'guide_title': 'Как собрать идеальный <span class="gold">игровой компьютер</span> в 2025 году',
+        'guide_text': 'Процессор, видеокарта, память и охлаждение — подробный разбор каждого компонента для сборки ПК под любой бюджет.',
+        'guide_l1': 'Видеокарта — ядро производительности', 'guide_l2': 'Процессор для онлайн-игр и стримов',
+        'guide_l3': '32 ГБ ОЗУ — новый стандарт', 'guide_l4': 'Быстрый NVMe-накопитель для мгновенной загрузки',
+        'guide_btn': 'Читать полный гид',
+
+        // Каталог игр
+        'games_breadcrumb': 'Игры',
+        'catalog_title': 'Каталог <span style="color:var(--gold);">игр</span>',
+        'search_ph': 'Поиск игр...',
+        'filter_all': 'Все', 'filter_shooter': 'Шутеры', 'filter_strategy': 'Стратегии', 'filter_rpg': 'RPG',
+        'filter_survival': 'Выживание', 'filter_sandbox': 'Песочницы', 'filter_sport': 'Спорт',
+        'filter_indie': 'Инди', 'filter_horror': 'Хоррор',
+        'cat_shooter': 'Шутер', 'cat_strategy': 'Стратегия', 'cat_rpg': 'RPG', 'cat_survival': 'Выживание',
+        'cat_sandbox': 'Песочница', 'cat_sport': 'Спорт', 'cat_indie': 'Инди', 'cat_horror': 'Хоррор',
+        'desc_shooter': 'Динамичный шутер с захватывающими перестрелками, соревновательным мультиплеером и отличной отдачей от оружия.',
+        'desc_strategy': 'Глубокая стратегия, требующая продуманного планирования, управления ресурсами и тактического мышления.',
+        'desc_rpg': 'Масштабная RPG с проработанным миром, системой прокачки и множеством сюжетных развилок.',
+        'desc_survival': 'Напряжённый survival-хоррор с исследованием опасного мира, крафтом и борьбой за выживание.',
+        'desc_sandbox': 'Открытая песочница с безграничными возможностями для творчества и экспериментов.',
+        'desc_sport': 'Реалистичный спортивный симулятор с точной физикой и захватывающим соревновательным режимом.',
+        'desc_indie': 'Оригинальная инди-игра с уникальной художественной стилистикой и необычными механиками.',
+        'desc_horror': 'Атмосферный хоррор с напряжённым геймплеем, скримерами и глубоким погружением в ужас.',
+        'desc_default': 'Увлекательная игра с уникальным геймплеем и глубокой проработкой мира.',
+        'gd_specs': 'Характеристики', 'gd_features': 'Особенности', 'gd_languages': 'Языки',
+        'gd_sysreq': 'Системные требования', 'gd_minreq': 'Минимальные:', 'gd_recreq': 'Рекомендуемые:',
+        'gd_genre': 'Жанр', 'gd_dev': 'Разработчик', 'gd_pub': 'Издатель', 'gd_release': 'Дата выхода', 'gd_age': 'Возраст', 'gd_online': 'Онлайн',
+        'gd_reviews': 'отзывов', 'gd_buy': 'Купить', 'gd_close': '✕ Закрыть',
+        'gd_online_multi': '50 000+ игроков', 'gd_online_single': 'Синглплеер',
+        'gd_lang_list': 'Русский, English, Deutsch, Français, Español, 中文, 日本語, Português',
+        'gd_minreq_text': 'ОС: Windows 10 64-bit · Процессор: Intel Core i3-8100 / AMD Ryzen 3 1200 · ОЗУ: 8 ГБ · Видеокарта: NVIDIA GTX 960 / AMD R9 380 · DirectX 11 · 30 ГБ на диске',
+        'gd_recreq_text': 'ОС: Windows 11 64-bit · Процессор: Intel Core i7-9700K / AMD Ryzen 5 3600 · ОЗУ: 16 ГБ · Видеокарта: NVIDIA RTX 2060 / AMD RX 5700 · DirectX 12 · 30 ГБ SSD',
+
+        // Акции
+        'promo_breadcrumb': 'Акции',
+        'promo_title': 'Акции и <span style="color:var(--gold);">скидки</span>',
+        'promo1_tag': 'Новое', 'promo1_title': 'Скидка 20% на первую покупку', 'promo1_desc': 'Скидка 20% на первую игру для новых покупателей',
+        'promo2_tag': 'Бонус', 'promo2_title': 'Бонусные баллы до 25%', 'promo2_desc': 'Возвращайте до 25% баллов с каждой покупки',
+        'promo3_tag': 'VIP', 'promo3_title': 'Эксклюзивные скидки для VIP', 'promo3_desc': 'Персональные предложения и повышенные бонусы',
+
+        // VIP
+        'vip_breadcrumb': 'VIP',
+        'vip_title': 'VIP <span style="color:var(--gold);">подписки</span>',
+        'vip_subtitle': 'Выберите уровень подписки и получите эксклюзивные привилегии в нашем магазине игр. Чем выше уровень — тем больше бонусов и скидок.',
+        'vip_silver_1': 'Скидка 5% на все игры', 'vip_silver_2': 'Ранний доступ к новинкам',
+        'vip_silver_3': 'Бонусные баллы ×1.5', 'vip_silver_4': 'Поддержка в приоритетном порядке',
+        'vip_subscribe': 'Подключить Silver',
+        'vip_gold_1': 'Скидка 12% на все игры', 'vip_gold_2': 'Бесплатные DLC каждый месяц',
+        'vip_gold_3': 'Бонусные баллы ×3', 'vip_gold_4': 'Персональный менеджер',
+        'vip_gold_5': 'Эксклюзивные турниры', 'vip_gold_6': 'Доступ к бете игр',
+        'vip_subscribe_gold': 'Подключить Gold',
+        'vip_platinum_1': 'Скидка 20% на все игры', 'vip_platinum_2': 'Бесплатные игры каждый месяц',
+        'vip_platinum_3': 'Бонусные баллы ×5', 'vip_platinum_4': 'Индивидуальные бонусы',
+        'vip_platinum_5': 'Приглашения на мероприятия', 'vip_platinum_6': 'Персональный консьерж 24/7',
+        'vip_platinum_7': 'Ранний доступ ко всем релизам',
+        'vip_subscribe_platinum': 'Подключить Platinum',
+
+        // Партнёры
+        'affiliate_breadcrumb': 'Партнёры',
+        'affiliate_title': 'Зарабатывайте с <span class="gold">Crown</span>',
+        'affiliate_subtitle': 'Приглашайте друзей и получайте до 30% от их выигрышей навсегда!',
+        'affiliate_invited': 'Приглашено', 'affiliate_active': 'Активных', 'affiliate_earned': 'Заработано',
+        'affiliate_feature1': 'Мгновенные выплаты', 'affiliate_feature1_desc': 'Деньги начисляются сразу',
+        'affiliate_feature2': 'Статистика', 'affiliate_feature2_desc': 'Отслеживайте прогресс',
+        'affiliate_feature3': 'VIP-статус', 'affiliate_feature3_desc': 'Эксклюзивные бонусы',
+        'affiliate_share': 'Поделиться ссылкой',
+
+        // Профиль
+        'profile_breadcrumb': 'Профиль', 'profile_name': 'Игрок', 'profile_level': 'Уровень 12',
+        'profile_online': 'В сети', 'profile_online_dot': 'В сети',
+        'profile_overview': 'Обзор', 'profile_country': 'Страна', 'profile_country_val': '🇷🇺 Россия',
+        'profile_reg': 'Регистрация', 'profile_reg_val': '15 марта 2024',
+        'profile_steam_level': 'Уровень Steam', 'profile_time': 'Время в играх', 'profile_hours': '342 ч',
+        'profile_library': 'Библиотека', 'profile_games': 'игр', 'profile_ach_count': 'достижений', 'profile_done': 'пройдено',
+        'profile_friends': 'Друзья', 'profile_badges': 'Достижения', 'profile_ach_65': '65% из 108 достижений',
+        'tab_activity': 'Активность', 'tab_library': 'Библиотека', 'tab_badges': 'Достижения', 'tab_settings': 'Настройки',
+        'act1': 'Играл в <strong>Counter-Strike 2</strong>', 'act1_time': 'сегодня, 14:32',
+        'act2': 'Получено достижение в <strong>Dota 2</strong>', 'act2_time': 'сегодня, 12:15',
+        'act3': 'Куплена игра <strong>Elden Ring</strong>', 'act3_time': 'вчера, 21:40',
+        'stats_title': '📊 Статистика игрока', 'stat_total': 'Всего игр', 'stat_done': 'Пройдено',
+        'stat_ach': 'Достижения', 'stat_hours': 'В играх',
+        'label_name': 'Имя', 'label_email': 'Email', 'label_lang': 'Язык',
+        'save_settings': 'Сохранить настройки',
+
+        // О нас
+        'about_breadcrumb': 'О нас',
+        'about_title': 'Королевский <span style="color:var(--gold);">статус</span>',
+        'about_p1': '<strong>Crown Games</strong> — это премиальный интернет-магазин игр, созданный для тех, кто ценит качество, азарт и безупречный сервис. Мы объединили более 550 топовых игр со всего мира в одном месте.',
+        'about_p2': 'Наша миссия — подарить вам незабываемые эмоции и атмосферу высшего статуса. Мы заботимся о каждом игроке и гарантируем честность, безопасность и мгновенные выплаты.',
+        'about_p3': '<strong>Присоединяйтесь к королевской игре!</strong>',
+        'about_img_sub': 'Crown Games — символ статуса',
+        'about_hist_title': 'Наша <span style="color:var(--gold);">история</span>',
+        'about_h1': '<strong>2020</strong> — Crown Games начал путь как небольшая команда энтузиастов с идеей создать идеальную игровую платформу.',
+        'about_h2': '<strong>2022</strong> — мы достигли отметки в 100 000 игроков и расширили каталог до 300 игр от ведущих студий.',
+        'about_h3': '<strong>2024</strong> — обновлённая платформа с мгновенными выплатами, VIP-программой и поддержкой 24/7.',
+        'about_h4': '<strong>2025</strong> — более 550 игр, миллионы сыгранных раундов и тысячи довольных игроков по всему миру.',
+        'about_today': 'Сегодня Crown Games — это не просто магазин игр, а целая экосистема для любителей азартных игр. Мы продолжаем развиваться, добавляем новые игры и улучшаем сервис каждый день.',
+        'about_values_label': '<strong>Наши ценности:</strong>',
+        'about_v1': 'Честность и прозрачность', 'about_v2': 'Безопасность на каждом уровне',
+        'about_v3': 'Индивидуальный подход к каждому игроку', 'about_v4': 'Постоянное развитие и инновации',
+        'about_values_title': 'Наши <span style="color:var(--gold);">ценности</span>',
+        'value_security': 'Безопасность', 'value_security_desc': 'Современная защита данных',
+        'value_speed': 'Скорость', 'value_speed_desc': 'Мгновенные выплаты',
+        'value_choice': 'Выбор', 'value_choice_desc': '550+ игр от топ-провайдеров',
+        'contact_title': 'Свяжитесь <span class="gold">с нами</span>',
+        'contact_email': 'Email', 'contact_phone': 'Телефон', 'contact_chat': 'Live-чат', 'contact_chat_val': 'Онлайн 24/7',
+        'contact_form_title': 'Написать нам', 'contact_name': 'Ваше имя', 'contact_msg': 'Сообщение',
+        'contact_msg_hint': '(макс. 500 символов)', 'contact_msg_ph': 'Ваше сообщение...', 'contact_send': 'Отправить',
+
+        // Футер
+        'footer_desc': 'Премиальный интернет-магазин игр для настоящих геймеров. Играйте с королевским стилем.',
+        'footer_menu': 'Меню', 'footer_info': 'Информация', 'footer_social': 'Соцсети',
+        'footer_policy': 'Политика', 'footer_terms': 'Условия',
+        'footer_copyright': '© 2025 Crown Games. Все права защищены.',
+        'footer_contacts': 'Контакты',
+
+        // Модальные окна
+        'auth_login_tab': 'Войти', 'auth_register_tab': 'Зарегистрироваться',
+        'login_title': 'Вход', 'login_sub': 'Войдите в свой аккаунт, чтобы продолжить',
+        'label_password': 'Пароль', 'btn_continue': 'Продолжить →',
+        'code_label': 'Код из письма', 'code_ph': '6-значный код',
+        'resend_code': 'Отправить код повторно', 'btn_login': 'Войти',
+        'register_title': 'Регистрация', 'register_sub': 'Создайте аккаунт и получите бонус 100% на первый депозит',
+        'label_name_input': 'Имя', 'btn_register': 'Зарегистрироваться',
+        'steam_help_title': 'Как узнать логин <span class="gold">Steam?</span>',
+        'steam_help_text': 'Следуйте простой инструкции, чтобы найти свой логин Steam:',
+        'steam_help_1': 'Откройте приложение Steam или сайт <strong>store.steampowered.com</strong>.',
+        'steam_help_2': 'Войдите в свой аккаунт.', 'steam_help_3': 'Нажмите на свой логин в правом верхнем углу.',
+        'steam_help_4': 'В выпадающем меню выберите «О моём аккаунте».',
+        'steam_help_5': 'Ваш логин отображается в верхней части страницы.',
+        'steam_help_6': 'Скопируйте логин и вставьте в поле ввода.',
+        'steam_help_example': '🖼️ Пример: ваш логин указан в шапке профиля Steam',
+        'steam_help_gotit': 'Понятно',
+        'buy_added': 'Товар добавлен в корзину', 'buy_cart': 'Перейти в корзину', 'buy_continue': 'Продолжить покупки',
+        'card_title': 'Оплата <span class="gold">картой</span>',
+        'card_secure': 'Защищённое соединение (SSL) • 3-D Secure',
+        'card_number': 'Номер карты', 'card_number_ph': '0000 0000 0000 0000',
+        'card_expiry': 'Срок действия', 'card_expiry_ph': 'ММ/ГГ', 'card_cvv': 'CVV/CVC', 'card_cvv_ph': '•••',
+        'card_holder': 'Держатель карты', 'card_holder_ph': 'IVAN IVANOV',
+        'card_save': 'Сохранить карту для следующих платежей',
+        'card_secure_notice': '🔒 Ваши данные защищены. Платежи проходят через PCI DSS сертифицированный шлюз.',
+        'card_sum': 'Сумма к оплате:', 'card_pay': 'Оплатить',
+        'card_agree': 'Нажимая «Оплатить», вы соглашаетесь с условиями оплаты',
+        'qr_title': 'Оплата через <span class="gold">СБП</span>',
+        'qr_scan': 'Отсканируйте QR-код в приложении банка',
+        'qr_expires': 'Срок действия кода:', 'qr_paid': 'Я оплатил', 'qr_cancel': 'Отмена',
+        'chat_title': '💬 Поддержка', 'chat_greeting': '👋 Здравствуйте! Чем я могу вам помочь?',
+        'chat_bot_1': 'Спасибо за сообщение! Чем ещё могу помочь?',
+        'chat_bot_2': 'Отличный вопрос! Давайте разберёмся.',
+        'chat_bot_3': 'Я всегда рад помочь вам!',
+        'chat_bot_4': 'Сейчас уточню информацию для вас.',
+        'chat_bot_5': 'Выберите интересующую вас тему, и я помогу.',
+
+        // Тосты и уведомления
+        'toast_cookies_saved': 'Спасибо! Настройки сохранены.',
+        'toast_cookies_declined': 'Вы отклонили использование cookie.',
+        'toast_theme_changed': '🎨 Тема изменена на ',
+        'toast_voice_unsupported': '❌ Голосовой поиск не поддерживается',
+        'toast_listening': '🎤 Слушаю...',
+        'toast_searching': '🔊 Поиск: "',
+        'toast_voice_failed': '❌ Не удалось распознать речь',
+        'toast_mic_error': '⚠️ Ошибка доступа к микрофону',
+        'toast_fav_removed': 'Удалено из избранного',
+        'toast_fav_added': 'Добавлено в избранное',
+        'notif_fav': 'В избранное!', 'notif_fav_added_text': 'Игра "',
+        'toast_exported': '📄 Профиль экспортирован! (TXT-файл)',
+        'toast_settings_saved': '✅ Настройки сохранены!',
+        'toast_game_not_found': '⚠️ Игра не найдена',
+        'notif_cart': 'Корзина', 'notif_cart_added': ' добавлена за ',
+        'notif_code_sent_title': 'Код подтверждения отправлен',
+        'toast_code_sent': '📧 Код отправлен на ',
+        'toast_pass_short': '❌ Пароль должен быть не короче 6 символов',
+        'toast_reg_success': '✅ Регистрация успешна! Бонус 1000 ₽ начислен',
+        'notif_welcome': 'Добро пожаловать!', 'notif_reg_success': ' успешно зарегистрирован!',
+        'toast_wrong_code': '❌ Неверный код. Проверьте письмо',
+        'toast_wrong_login': '❌ Неверный email или пароль',
+        'toast_welcome_back': '✅ Добро пожаловать, ',
+        'notif_login': 'Вход выполнен', 'notif_login_welcome': 'Рады видеть вас, ',
+        'toast_wrong_code2': '❌ Неверный код подтверждения',
+        'toast_notif_on': '🔔 Уведомления включены!',
+        'notif_notif_on': 'Уведомления включены!', 'notif_notif_on_text': 'Теперь вы будете получать push-уведомления',
+        'toast_notif_off': 'Уведомления отключены.',
+        'toast_link_copied': '📋 Ссылка скопирована!',
+        'notif_link_copied': 'Ссылка скопирована!', 'notif_link_copied_text': 'Реферальная ссылка скопирована в буфер обмена',
+        'toast_contact_sent': 'Ваше сообщение отправлено! Мы свяжемся с вами в ближайшее время.',
+        'notif_contact': 'Сообщение отправлено!', 'notif_contact_text': 'Мы свяжемся с вами в ближайшее время',
+        'toast_pwa_install': '📱 Установка приложения...',
+        'notif_pwa': 'Установка PWA', 'notif_pwa_text': 'Приложение Crown Games устанавливается...',
+        'toast_amount_zero': '⚠️ Введите сумму больше 0',
+        'toast_login_empty': '⚠️ Введите логин аккаунта',
+        'toast_topup_created': '✅ Заявка на пополнение ',
+        'notif_topup': 'Пополнение сервисов', 'notif_topup_text': 'Заявка на ',
+        'toast_login_steam': '⚠️ Введите логин аккаунта Steam',
+        'toast_agree_offer': '⚠️ Подтвердите согласие с офертой об оказании услуг',
+        'toast_agree_rules': '⚠️ Подтвердите, что ознакомлены с правилами оплаты и условиями возврата',
+        'toast_pay_created': '✅ Заявка на оплату создана (',
+        'notif_pay': 'Оплата', 'notif_pay_text': 'Заявка на оплату принята',
+        'toast_card_num': '⚠️ Введите корректный номер карты (16 цифр)',
+        'toast_card_expiry': '⚠️ Введите срок действия карты (ММ/ГГ)',
+        'toast_card_cvv': '⚠️ Введите CVV-код (3 цифры)',
+        'toast_card_holder': '⚠️ Введите имя держателя карты',
+        'toast_pay_ok': '✅ Оплата картой на сумму ',
+        'notif_card_pay': 'Оплата картой', 'notif_card_pay_text': 'Платёж ',
+        'toast_pay_ok_post': 'прошла успешно!',
+        'notif_card_pay_text_post': 'подтверждён',
+
+        // Кнопка темы
+        'theme_toggle_title': 'Тёмная/светлая тема', 'theme_customize_title': 'Сменить тему',
+    },
+    en: {
+        // Navigation
+        'nav_home': 'Home', 'nav_games': 'Games', 'nav_vip': 'VIP', 'nav_blog': 'Blog',
+        'nav_affiliate': 'Affiliate', 'nav_profile': 'Profile', 'nav_about': 'About', 'nav_contacts': 'Contacts',
+        'auth_login': 'Login', 'auth_register': 'Register',
+
+        // Breadcrumbs
+        'bread_home': 'Home', 'bread_games': 'Games', 'bread_promo': 'Promotions', 'bread_vip': 'VIP',
+        'bread_affiliate': 'Affiliate', 'bread_about': 'About', 'bread_blog': 'Blog', 'bread_profile': 'Profile',
+
+        // Banners
+        'pwa_install': '— install the app', 'pwa_desc': 'Quick access, push notifications and offline mode',
+        'pwa_btn': 'Install',
+        'cookie_text': '🍪 We use cookies to improve your experience. By continuing to use the site, you agree to our privacy policy.',
+        'cookie_decline': 'Decline', 'cookie_accept': 'Accept',
+        'notif_text': '🔔 Enable notifications so you don\'t miss winnings and new bonuses!',
+        'notif_allow': 'Allow', 'notif_deny': 'Not now',
+        'voice_listening': '🎤 Listening...',
+        'theme_customizer': 'Theme settings',
+        'theme_gold': 'Gold', 'theme_platinum': 'Platinum', 'theme_ruby': 'Ruby', 'theme_sapphire': 'Sapphire',
+        'loader_sub': 'Loading the gaming universe...',
+        'toast_title': 'Notification', 'toast_text': 'Notification text',
+
+        // Hero
+        'hero_badge': '✦ Premium Game Portal',
+        'hero_title1': 'The royal game',
+        'hero_title2': 'begins here',
+        'hero_desc': 'Immerse yourself in a world of luxury and excitement. Only the best games, exclusive bonuses and an atmosphere of the highest status.',
+        'hero_play': 'Play Now', 'hero_promo': 'Promotions',
+
+        // Steam top-up
+        'topup_title': 'Top up Steam balance',
+        'topup_subtitle': 'Instant Steam wallet top-up',
+        'topup_refills': 'refills',
+        'region_ru': 'Russia', 'region_kz': 'Kazakhstan', 'region_sbp': 'SBP',
+        'discount_current': 'Current discount: <b>-2%</b>',
+        'topup_login_label': 'Account login', 'topup_login_hint': 'How to find login?',
+        'topup_login_ph': 'Enter your login',
+        'topup_amount_label': 'Top-up amount', 'topup_amount_prefix': 'You get',
+        'fee_progress_text': 'Another 1000 ₽ to reduce commission', 'fee_commission': 'Including commission ~7.4%',
+        'fee_progress_need': 'Another {AMOUNT} ₽ to reduce commission',
+        'fee_progress_min': 'Minimum commission!',
+        'quick_sum_label': 'Quick amount selection',
+
+        // Payment
+        'pay_header': 'Payment <span class="gold">method</span>', 'pay_subtitle': 'Choose a convenient method',
+        'pay_card': 'Card', 'pay_sbp': 'SBP',
+        'pay_sum_amount': 'Top-up amount', 'pay_sum_fee': 'Service commission', 'pay_sum_total': 'Total to pay',
+        'pay_promo_label': 'Promo code', 'pay_promo_ph': 'Enter promo code (if any)',
+        'pay_warning': '⚠️ For successful payment, we recommend disabling VPN and refreshing the page',
+        'pay_submit': 'Pay',
+        'pay_agree_text': 'By clicking «Pay», you agree to the service agreement',
+        'pay_legal_rules': 'I have read the payment rules, refund terms and personal data processing',
+
+        // Top games and news
+        'top_title': 'Top <span class="gold">games</span>', 'top_viewall': 'View all →',
+        'news_title': 'Blog & <span class="gold">news</span>', 'news_tag_new': 'New',
+        'readmore': 'Read more →',
+        'news1_title': 'Cyberpunk 2077: major graphics update',
+        'news1_text': 'Ray tracing and new performance settings made Night City even more beautiful. The developers released a major patch that adds DLSS 4 support, improved reflections and optimization for new-generation graphics cards.',
+        'news2_tag': 'Esports',
+        'news2_title': 'Elden Ring: secrets and guide to hard bosses',
+        'news2_text': 'How to beat the toughest bosses of the Lands Between — proven builds and strategies. In this guide we collected the best tips from professional players: which weapons and spells to use against each boss.',
+        'news3_tag': 'Strategies',
+        'news3_title': 'Dota 2: 2025 meta and best heroes',
+        'news3_text': 'Analysis of the current meta, the strongest heroes of the patch and tips for climbing rank. We analyzed high-rank match statistics and prepared a list of the most effective heroes for each position.',
+        'news4_tag': 'Guide',
+        'news4_title': 'Stardew Valley: best farming strategies',
+        'news4_text': 'How to get rich fast, which crops are more profitable and secrets of communicating with villagers. In this detailed guide we will tell you about the most profitable crops for each season.',
+        'news5_tag': 'Review',
+        'news5_title': 'Red Dead Redemption 2: why it\'s a masterpiece',
+        'news5_text': 'Analysis of the open world, story and gameplay of the most atmospheric game of recent years. Red Dead Redemption 2 continues to hold the bar as the best game in the western genre.',
+        'news6_tag': 'Tips',
+        'news6_title': "Baldur's Gate 3: character creation guide",
+        'news6_text': 'The best classes, races and builds for beginners and experienced players. Character creation in Baldur\'s Gate 3 is one of the most important stages of the game.',
+        'guide_badge': '✦ Guide of the week',
+        'guide_title': 'How to build the perfect <span class="gold">gaming PC</span> in 2025',
+        'guide_text': 'Processor, graphics card, memory and cooling — a detailed breakdown of every component for building a PC for any budget.',
+        'guide_l1': 'Graphics card — the core of performance', 'guide_l2': 'Processor for online games and streaming',
+        'guide_l3': '32 GB RAM — the new standard', 'guide_l4': 'Fast NVMe drive for instant loading',
+        'guide_btn': 'Read full guide',
+
+        // Game catalog
+        'games_breadcrumb': 'Games',
+        'catalog_title': 'Game <span style="color:var(--gold);">catalog</span>',
+        'search_ph': 'Search games...',
+        'filter_all': 'All', 'filter_shooter': 'Shooters', 'filter_strategy': 'Strategies', 'filter_rpg': 'RPG',
+        'filter_survival': 'Survival', 'filter_sandbox': 'Sandbox', 'filter_sport': 'Sports',
+        'filter_indie': 'Indie', 'filter_horror': 'Horror',
+        'cat_shooter': 'Shooter', 'cat_strategy': 'Strategy', 'cat_rpg': 'RPG', 'cat_survival': 'Survival',
+        'cat_sandbox': 'Sandbox', 'cat_sport': 'Sports', 'cat_indie': 'Indie', 'cat_horror': 'Horror',
+        'desc_shooter': 'A dynamic shooter with exciting gunfights, competitive multiplayer and great weapon feedback.',
+        'desc_strategy': 'A deep strategy game requiring careful planning, resource management and tactical thinking.',
+        'desc_rpg': 'A large-scale RPG with a detailed world, leveling system and many story branches.',
+        'desc_survival': 'An intense survival horror with exploration of a dangerous world, crafting and the fight to survive.',
+        'desc_sandbox': 'An open sandbox with endless possibilities for creativity and experimentation.',
+        'desc_sport': 'A realistic sports simulator with accurate physics and an exciting competitive mode.',
+        'desc_indie': 'An original indie game with a unique artistic style and unusual mechanics.',
+        'desc_horror': 'An atmospheric horror with intense gameplay, jump scares and deep immersion in terror.',
+        'desc_default': 'An engaging game with unique gameplay and deep world-building.',
+        'gd_specs': 'Specifications', 'gd_features': 'Features', 'gd_languages': 'Languages',
+        'gd_sysreq': 'System Requirements', 'gd_minreq': 'Minimum:', 'gd_recreq': 'Recommended:',
+        'gd_genre': 'Genre', 'gd_dev': 'Developer', 'gd_pub': 'Publisher', 'gd_release': 'Release date', 'gd_age': 'Age', 'gd_online': 'Online',
+        'gd_reviews': 'reviews', 'gd_buy': 'Buy', 'gd_close': '✕ Close',
+        'gd_online_multi': '50,000+ players', 'gd_online_single': 'Singleplayer',
+        'gd_lang_list': 'Russian, English, Deutsch, Français, Español, 中文, 日本語, Português',
+        'gd_minreq_text': 'OS: Windows 10 64-bit · CPU: Intel Core i3-8100 / AMD Ryzen 3 1200 · RAM: 8 GB · GPU: NVIDIA GTX 960 / AMD R9 380 · DirectX 11 · 30 GB storage',
+        'gd_recreq_text': 'OS: Windows 11 64-bit · CPU: Intel Core i7-9700K / AMD Ryzen 5 3600 · RAM: 16 GB · GPU: NVIDIA RTX 2060 / AMD RX 5700 · DirectX 12 · 30 GB SSD',
+
+        // Promotions
+        'promo_breadcrumb': 'Promotions',
+        'promo_title': 'Promotions & <span style="color:var(--gold);">discounts</span>',
+        'promo1_tag': 'New', 'promo1_title': '20% off your first purchase', 'promo1_desc': '20% off your first game for new customers',
+        'promo2_tag': 'Bonus', 'promo2_title': 'Bonus points up to 25%', 'promo2_desc': 'Get up to 25% cashback points with every purchase',
+        'promo3_tag': 'VIP', 'promo3_title': 'Exclusive discounts for VIP', 'promo3_desc': 'Personal offers and increased bonuses',
+
+        // VIP
+        'vip_breadcrumb': 'VIP',
+        'vip_title': 'VIP <span style="color:var(--gold);">subscriptions</span>',
+        'vip_subtitle': 'Choose a subscription level and get exclusive privileges in our game store. The higher the level — the more bonuses and discounts.',
+        'vip_silver_1': '5% off all games', 'vip_silver_2': 'Early access to new releases',
+        'vip_silver_3': 'Bonus points ×1.5', 'vip_silver_4': 'Priority support',
+        'vip_subscribe': 'Subscribe Silver',
+        'vip_gold_1': '12% off all games', 'vip_gold_2': 'Free DLC every month',
+        'vip_gold_3': 'Bonus points ×3', 'vip_gold_4': 'Personal manager',
+        'vip_gold_5': 'Exclusive tournaments', 'vip_gold_6': 'Beta access',
+        'vip_subscribe_gold': 'Subscribe Gold',
+        'vip_platinum_1': '20% off all games', 'vip_platinum_2': 'Free games every month',
+        'vip_platinum_3': 'Bonus points ×5', 'vip_platinum_4': 'Individual bonuses',
+        'vip_platinum_5': 'Event invitations', 'vip_platinum_6': 'Personal concierge 24/7',
+        'vip_platinum_7': 'Early access to all releases',
+        'vip_subscribe_platinum': 'Subscribe Platinum',
+
+        // Affiliate
+        'affiliate_breadcrumb': 'Affiliate',
+        'affiliate_title': 'Earn with <span class="gold">Crown</span>',
+        'affiliate_subtitle': 'Invite friends and get up to 30% of their winnings forever!',
+        'affiliate_invited': 'Invited', 'affiliate_active': 'Active', 'affiliate_earned': 'Earned',
+        'affiliate_feature1': 'Instant payouts', 'affiliate_feature1_desc': 'Money is credited immediately',
+        'affiliate_feature2': 'Statistics', 'affiliate_feature2_desc': 'Track your progress',
+        'affiliate_feature3': 'VIP status', 'affiliate_feature3_desc': 'Exclusive bonuses',
+        'affiliate_share': 'Share link',
+
+        // Profile
+        'profile_breadcrumb': 'Profile', 'profile_name': 'Player', 'profile_level': 'Level 12',
+        'profile_online': 'Online', 'profile_online_dot': 'Online',
+        'profile_overview': 'Overview', 'profile_country': 'Country', 'profile_country_val': '🇷🇺 Russia',
+        'profile_reg': 'Registered', 'profile_reg_val': 'March 15, 2024',
+        'profile_steam_level': 'Steam Level', 'profile_time': 'Time in games', 'profile_hours': '342 h',
+        'profile_library': 'Library', 'profile_games': 'games', 'profile_ach_count': 'achievements', 'profile_done': 'completed',
+        'profile_friends': 'Friends', 'profile_badges': 'Achievements', 'profile_ach_65': '65% of 108 achievements',
+        'tab_activity': 'Activity', 'tab_library': 'Library', 'tab_badges': 'Achievements', 'tab_settings': 'Settings',
+        'act1': 'Played <strong>Counter-Strike 2</strong>', 'act1_time': 'today, 14:32',
+        'act2': 'Earned achievement in <strong>Dota 2</strong>', 'act2_time': 'today, 12:15',
+        'act3': 'Bought game <strong>Elden Ring</strong>', 'act3_time': 'yesterday, 21:40',
+        'stats_title': '📊 Player statistics', 'stat_total': 'Total games', 'stat_done': 'Completed',
+        'stat_ach': 'Achievements', 'stat_hours': 'In games',
+        'label_name': 'Name', 'label_email': 'Email', 'label_lang': 'Language',
+        'save_settings': 'Save settings',
+
+        // About
+        'about_breadcrumb': 'About',
+        'about_title': 'Royal <span style="color:var(--gold);">status</span>',
+        'about_p1': '<strong>Crown Games</strong> is a premium online game store created for those who value quality, excitement and impeccable service. We brought together more than 550 top games from around the world in one place.',
+        'about_p2': 'Our mission is to give you unforgettable emotions and an atmosphere of the highest status. We take care of every player and guarantee honesty, security and instant payouts.',
+        'about_p3': '<strong>Join the royal game!</strong>',
+        'about_img_sub': 'Crown Games — a symbol of status',
+        'about_hist_title': 'Our <span style="color:var(--gold);">history</span>',
+        'about_h1': '<strong>2020</strong> — Crown Games started as a small team of enthusiasts with the idea of creating the perfect gaming platform.',
+        'about_h2': '<strong>2022</strong> — we reached 100,000 players and expanded the catalog to 300 games from leading studios.',
+        'about_h3': '<strong>2024</strong> — an updated platform with instant payouts, a VIP program and 24/7 support.',
+        'about_h4': '<strong>2025</strong> — more than 550 games, millions of rounds played and thousands of satisfied players around the world.',
+        'about_today': 'Today Crown Games is not just a game store, but a whole ecosystem for gambling lovers. We continue to grow, add new games and improve the service every day.',
+        'about_values_label': '<strong>Our values:</strong>',
+        'about_v1': 'Honesty and transparency', 'about_v2': 'Security at every level',
+        'about_v3': 'Individual approach to every player', 'about_v4': 'Constant development and innovation',
+        'about_values_title': 'Our <span style="color:var(--gold);">values</span>',
+        'value_security': 'Security', 'value_security_desc': 'Modern data protection',
+        'value_speed': 'Speed', 'value_speed_desc': 'Instant payouts',
+        'value_choice': 'Choice', 'value_choice_desc': '550+ games from top providers',
+        'contact_title': 'Contact <span class="gold">us</span>',
+        'contact_email': 'Email', 'contact_phone': 'Phone', 'contact_chat': 'Live chat', 'contact_chat_val': 'Online 24/7',
+        'contact_form_title': 'Write to us', 'contact_name': 'Your name', 'contact_msg': 'Message',
+        'contact_msg_hint': '(max. 500 characters)', 'contact_msg_ph': 'Your message...', 'contact_send': 'Send',
+
+        // Footer
+        'footer_desc': 'Premium online game store for true gamers. Play with royal style.',
+        'footer_menu': 'Menu', 'footer_info': 'Information', 'footer_social': 'Social',
+        'footer_policy': 'Privacy Policy', 'footer_terms': 'Terms',
+        'footer_copyright': '© 2025 Crown Games. All rights reserved.',
+        'footer_contacts': 'Contacts',
+
+        // Modals
+        'auth_login_tab': 'Login', 'auth_register_tab': 'Register',
+        'login_title': 'Login', 'login_sub': 'Log in to your account to continue',
+        'label_password': 'Password', 'btn_continue': 'Continue →',
+        'code_label': 'Code from email', 'code_ph': '6-digit code',
+        'resend_code': 'Resend code', 'btn_login': 'Login',
+        'register_title': 'Registration', 'register_sub': 'Create an account and get a 100% bonus on your first deposit',
+        'label_name_input': 'Name', 'btn_register': 'Register',
+        'steam_help_title': 'How to find your <span class="gold">Steam</span> login?',
+        'steam_help_text': 'Follow the simple instructions to find your Steam login:',
+        'steam_help_1': 'Open the Steam app or website <strong>store.steampowered.com</strong>.',
+        'steam_help_2': 'Log in to your account.', 'steam_help_3': 'Click on your login in the top right corner.',
+        'steam_help_4': 'In the dropdown menu, select «About my account».',
+        'steam_help_5': 'Your login is displayed at the top of the page.',
+        'steam_help_6': 'Copy the login and paste it into the input field.',
+        'steam_help_example': '🖼️ Example: your login is listed in the Steam profile header',
+        'steam_help_gotit': 'Got it',
+        'buy_added': 'Item added to cart', 'buy_cart': 'Go to cart', 'buy_continue': 'Continue shopping',
+        'card_title': 'Card <span class="gold">payment</span>',
+        'card_secure': 'Secure connection (SSL) • 3-D Secure',
+        'card_number': 'Card number', 'card_number_ph': '0000 0000 0000 0000',
+        'card_expiry': 'Expiry date', 'card_expiry_ph': 'MM/YY', 'card_cvv': 'CVV/CVC', 'card_cvv_ph': '•••',
+        'card_holder': 'Card holder', 'card_holder_ph': 'IVAN IVANOV',
+        'card_save': 'Save card for future payments',
+        'card_secure_notice': '🔒 Your data is protected. Payments go through a PCI DSS certified gateway.',
+        'card_sum': 'Amount to pay:', 'card_pay': 'Pay',
+        'card_agree': 'By clicking «Pay», you agree to the payment terms',
+        'qr_title': 'SBP <span class="gold">payment</span>',
+        'qr_scan': 'Scan the QR code in your bank app',
+        'qr_expires': 'Code expires in:', 'qr_paid': 'I paid', 'qr_cancel': 'Cancel',
+        'chat_title': '💬 Support', 'chat_greeting': '👋 Hello! How can I help you?',
+        'chat_bot_1': 'Thank you for your message! How else can I help?',
+        'chat_bot_2': 'Great question! Let me look into it.',
+        'chat_bot_3': 'I am always happy to help you!',
+        'chat_bot_4': 'Let me check that for you.',
+        'chat_bot_5': 'Choose a topic you are interested in, and I will help.',
+
+        // Toasts and notifications
+        'toast_cookies_saved': 'Thank you! Settings saved.',
+        'toast_cookies_declined': 'You declined cookies.',
+        'toast_theme_changed': '🎨 Theme changed to ',
+        'toast_voice_unsupported': '❌ Voice search not supported',
+        'toast_listening': '🎤 Listening...',
+        'toast_searching': '🔊 Searching: "',
+        'toast_voice_failed': '❌ Speech not recognized',
+        'toast_mic_error': '⚠️ Microphone access error',
+        'toast_fav_removed': 'Removed from favorites',
+        'toast_fav_added': 'Added to favorites',
+        'notif_fav': 'Favorites!', 'notif_fav_added_text': 'Game "',
+        'toast_exported': '📄 Profile exported! (TXT file)',
+        'toast_settings_saved': '✅ Settings saved!',
+        'toast_game_not_found': '⚠️ Game not found',
+        'notif_cart': 'Cart', 'notif_cart_added': ' added for ',
+        'notif_code_sent_title': 'Confirmation code sent',
+        'toast_code_sent': '📧 Code sent to ',
+        'toast_pass_short': '❌ Password must be at least 6 characters',
+        'toast_reg_success': '✅ Registration successful! 1000 ₽ bonus credited',
+        'notif_welcome': 'Welcome!', 'notif_reg_success': ' registered successfully!',
+        'toast_wrong_code': '❌ Wrong code. Check your email',
+        'toast_wrong_login': '❌ Wrong email or password',
+        'toast_welcome_back': '✅ Welcome back, ',
+        'notif_login': 'Login successful', 'notif_login_welcome': 'Glad to see you, ',
+        'toast_wrong_code2': '❌ Wrong confirmation code',
+        'toast_notif_on': '🔔 Notifications enabled!',
+        'notif_notif_on': 'Notifications enabled!', 'notif_notif_on_text': 'You will now receive push notifications',
+        'toast_notif_off': 'Notifications disabled.',
+        'toast_link_copied': '📋 Link copied!',
+        'notif_link_copied': 'Link copied!', 'notif_link_copied_text': 'Referral link copied to clipboard',
+        'toast_contact_sent': 'Your message has been sent! We will contact you shortly.',
+        'notif_contact': 'Message sent!', 'notif_contact_text': 'We will contact you shortly',
+        'toast_pwa_install': '📱 Installing the app...',
+        'notif_pwa': 'PWA Installation', 'notif_pwa_text': 'Crown Games is installing...',
+        'toast_amount_zero': '⚠️ Enter an amount greater than 0',
+        'toast_login_empty': '⚠️ Enter account login',
+        'toast_topup_created': '✅ Top-up request for ',
+        'notif_topup': 'Service top-up', 'notif_topup_text': 'Request for ',
+        'toast_login_steam': '⚠️ Enter your Steam account login',
+        'toast_agree_offer': '⚠️ Confirm your agreement with the service offer',
+        'toast_agree_rules': '⚠️ Confirm that you have read the payment rules and refund terms',
+        'toast_pay_created': '✅ Payment request created (',
+        'notif_pay': 'Payment', 'notif_pay_text': 'Payment request accepted',
+        'toast_card_num': '⚠️ Enter a valid card number (16 digits)',
+        'toast_card_expiry': '⚠️ Enter card expiry date (MM/YY)',
+        'toast_card_cvv': '⚠️ Enter CVV code (3 digits)',
+        'toast_card_holder': '⚠️ Enter card holder name',
+        'toast_pay_ok': '✅ Card payment for ',
+        'notif_card_pay': 'Card payment', 'notif_card_pay_text': 'Payment ',
+        'toast_pay_ok_post': ' completed successfully!',
+        'notif_card_pay_text_post': ' confirmed',
+
+        // Theme button
+        'theme_toggle_title': 'Dark/light theme', 'theme_customize_title': 'Change theme',
+    },
+    zh: {
+        // 导航
+        'nav_home': '首页', 'nav_games': '游戏', 'nav_vip': 'VIP', 'nav_blog': '博客',
+        'nav_affiliate': '合作伙伴', 'nav_profile': '个人资料', 'nav_about': '关于我们', 'nav_contacts': '联系方式',
+        'auth_login': '登录', 'auth_register': '注册',
+
+        // 面包屑
+        'bread_home': '首页', 'bread_games': '游戏', 'bread_promo': '促销', 'bread_vip': 'VIP',
+        'bread_affiliate': '合作伙伴', 'bread_about': '关于我们', 'bread_blog': '博客', 'bread_profile': '个人资料',
+
+        // 横幅
+        'pwa_install': '— 安装应用', 'pwa_desc': '快速访问、推送通知和离线模式',
+        'pwa_btn': '安装',
+        'cookie_text': '🍪 我们使用 Cookie 来改善您的体验。继续使用本网站即表示您同意我们的隐私政策。',
+        'cookie_decline': '拒绝', 'cookie_accept': '接受',
+        'notif_text': '🔔 开启通知，不错过奖金和新优惠！',
+        'notif_allow': '允许', 'notif_deny': '稍后',
+        'voice_listening': '🎤 正在聆听...',
+        'theme_customizer': '主题设置',
+        'theme_gold': '金色', 'theme_platinum': '铂金', 'theme_ruby': '红宝石', 'theme_sapphire': '蓝宝石',
+        'loader_sub': '正在加载游戏世界...',
+        'toast_title': '通知', 'toast_text': '通知内容',
+
+        // 主视觉
+        'hero_badge': '✦ 高级游戏门户',
+        'hero_title1': '王者游戏',
+        'hero_title2': '从这里开始',
+        'hero_desc': '沉浸在奢华与刺激的世界中。只有最好的游戏、独家奖励和最高地位的氛围。',
+        'hero_play': '立即游戏', 'hero_promo': '促销',
+
+        // Steam 充值
+        'topup_title': '充值Steam余额',
+        'topup_subtitle': '即时充值Steam钱包',
+        'topup_refills': '充值次数',
+        'region_ru': '俄罗斯', 'region_kz': '哈萨克斯坦', 'region_sbp': 'SBP',
+        'discount_current': '当前折扣: <b>-2%</b>',
+        'topup_login_label': '账户登录名', 'topup_login_hint': '如何找到登录名？',
+        'topup_login_ph': '请输入您的登录名',
+        'topup_amount_label': '充值金额', 'topup_amount_prefix': '您获得',
+        'fee_progress_text': '再充 1000 ₽ 以减少手续费', 'fee_commission': '含手续费 ~7.4%',
+        'fee_progress_need': '再充 {AMOUNT} ₽ 以减少手续费',
+        'fee_progress_min': '最低手续费！',
+        'quick_sum_label': '快速选择金额',
+
+        // 支付
+        'pay_header': '支付<span class="gold">方式</span>', 'pay_subtitle': '选择便捷的方式',
+        'pay_card': '银行卡', 'pay_sbp': 'SBP',
+        'pay_sum_amount': '充值金额', 'pay_sum_fee': '服务手续费', 'pay_sum_total': '应付总额',
+        'pay_promo_label': '优惠码', 'pay_promo_ph': '输入优惠码（如有）',
+        'pay_warning': '⚠️ 为确保支付成功，建议关闭VPN并刷新页面',
+        'pay_submit': '支付',
+        'pay_agree_text': '点击「支付」即表示您同意服务协议',
+        'pay_legal_rules': '我已阅读支付规则、退款条款和个人数据处理说明',
+
+        // 热门游戏和新闻
+        'top_title': '热门<span class="gold">游戏</span>', 'top_viewall': '查看全部 →',
+        'news_title': '博客 & <span class="gold">新闻</span>', 'news_tag_new': '新游',
+        'readmore': '阅读更多 →',
+        'news1_title': '《赛博朋克2077》：重大画面更新',
+        'news1_text': '光线追踪和新的性能设置让夜之城更加美丽。开发者发布了大型补丁，增加了DLSS 4支持、改进的反射和新一代显卡的优化。',
+        'news2_tag': '电竞',
+        'news2_title': '《艾尔登法环》：秘密与困难Boss攻略',
+        'news2_text': '如何击败交界地最难的Boss——经过验证的配装和策略。本指南汇集了职业玩家的最佳建议：每个Boss使用什么武器和法术。',
+        'news3_tag': '策略',
+        'news3_title': '《Dota 2》：2025年版本与最佳英雄',
+        'news3_text': '分析当前版本、最强英雄和上分建议。我们分析了高分段比赛数据，为每个位置准备了最有效的英雄列表。',
+        'news4_tag': '指南',
+        'news4_title': '《星露谷物语》：最佳农场策略',
+        'news4_text': '如何快速致富、哪些作物更划算以及与村民交流的秘诀。本详细指南将介绍每个季节最赚钱的作物。',
+        'news5_tag': '评测',
+        'news5_title': '《荒野大镖客2》：为何是杰作',
+        'news5_text': '分析近年最具氛围感的游戏的开放世界、剧情和玩法。《荒野大镖客2》继续保持着西部题材最佳游戏的标准。',
+        'news6_tag': '技巧',
+        'news6_title': '《博德之门3》：角色创建指南',
+        'news6_text': '适合新手和老玩家的最佳职业、种族和配装。在《博德之门3》中创建角色是游戏最重要的阶段之一。',
+        'guide_badge': '✦ 本周指南',
+        'guide_title': '如何在2025年组装完美的<span class="gold">游戏电脑</span>',
+        'guide_text': '处理器、显卡、内存和散热——任何预算下组装PC每个组件的详细解析。',
+        'guide_l1': '显卡——性能核心', 'guide_l2': '适合网游和直播的处理器',
+        'guide_l3': '32GB内存——新标准', 'guide_l4': '快速NVMe硬盘，瞬时加载',
+        'guide_btn': '阅读完整指南',
+
+        // 游戏目录
+        'games_breadcrumb': '游戏',
+        'catalog_title': '游戏<span style="color:var(--gold);">目录</span>',
+        'search_ph': '搜索游戏...',
+        'filter_all': '全部', 'filter_shooter': '射击', 'filter_strategy': '策略', 'filter_rpg': 'RPG',
+        'filter_survival': '生存', 'filter_sandbox': '沙盒', 'filter_sport': '体育',
+        'filter_indie': '独立', 'filter_horror': '恐怖',
+        'cat_shooter': '射击', 'cat_strategy': '策略', 'cat_rpg': 'RPG', 'cat_survival': '生存',
+        'cat_sandbox': '沙盒', 'cat_sport': '体育', 'cat_indie': '独立', 'cat_horror': '恐怖',
+        'desc_shooter': '一款动感十足的射击游戏，拥有激动人心的枪战、竞技多人模式和出色的武器手感。',
+        'desc_strategy': '一款深度策略游戏，需要深思熟虑的规划、资源管理和战术思维。',
+        'desc_rpg': '一款大型RPG，拥有精细的世界、升级系统和众多剧情分支。',
+        'desc_survival': '一款紧张的生存恐怖游戏，探索危险世界、制作物品并努力生存。',
+        'desc_sandbox': '一个开放的沙盒世界，为创造和实验提供无限可能。',
+        'desc_sport': '一款逼真的体育模拟器，拥有精确的物理效果和激动人心的竞技模式。',
+        'desc_indie': '一款原创独立游戏，具有独特的艺术风格和非同寻常的机制。',
+        'desc_horror': '一款氛围感十足的恐怖游戏，紧张的游戏玩法、惊吓和深度沉浸。',
+        'desc_default': '一款玩法独特、世界观深刻的引人入胜的游戏。',
+        'gd_specs': '规格', 'gd_features': '特色', 'gd_languages': '语言',
+        'gd_sysreq': '系统要求', 'gd_minreq': '最低配置：', 'gd_recreq': '推荐配置：',
+        'gd_genre': '类型', 'gd_dev': '开发商', 'gd_pub': '发行商', 'gd_release': '发行日期', 'gd_age': '年龄', 'gd_online': '在线',
+        'gd_reviews': '条评价', 'gd_buy': '购买', 'gd_close': '✕ 关闭',
+        'gd_online_multi': '50,000+ 玩家', 'gd_online_single': '单人',
+        'gd_lang_list': '俄语, English, Deutsch, Français, Español, 中文, 日本語, Português',
+        'gd_minreq_text': '系统：Windows 10 64位 · CPU：Intel Core i3-8100 / AMD Ryzen 3 1200 · 内存：8GB · 显卡：NVIDIA GTX 960 / AMD R9 380 · DirectX 11 · 30GB硬盘空间',
+        'gd_recreq_text': '系统：Windows 11 64位 · CPU：Intel Core i7-9700K / AMD Ryzen 5 3600 · 内存：16GB · 显卡：NVIDIA RTX 2060 / AMD RX 5700 · DirectX 12 · 30GB SSD',
+
+        // 促销
+        'promo_breadcrumb': '促销',
+        'promo_title': '促销 & <span style="color:var(--gold);">折扣</span>',
+        'promo1_tag': '新', 'promo1_title': '首次购买立减20%', 'promo1_desc': '新客户首款游戏立减20%',
+        'promo2_tag': '奖励', 'promo2_title': '最高25%奖励积分', 'promo2_desc': '每次购买最高返还25%积分',
+        'promo3_tag': 'VIP', 'promo3_title': 'VIP专属折扣', 'promo3_desc': '个性化优惠和更高奖励',
+
+        // VIP
+        'vip_breadcrumb': 'VIP',
+        'vip_title': 'VIP<span style="color:var(--gold);">订阅</span>',
+        'vip_subtitle': '选择订阅级别，在我们的游戏商店获得独家特权。级别越高 — 奖金和折扣越多。',
+        'vip_silver_1': '所有游戏5%折扣', 'vip_silver_2': '抢先体验新游戏',
+        'vip_silver_3': '积分×1.5', 'vip_silver_4': '优先支持',
+        'vip_subscribe': '订阅 Silver',
+        'vip_gold_1': '所有游戏12%折扣', 'vip_gold_2': '每月免费DLC',
+        'vip_gold_3': '积分×3', 'vip_gold_4': '个人经理',
+        'vip_gold_5': '独家锦标赛', 'vip_gold_6': 'Beta测试资格',
+        'vip_subscribe_gold': '订阅 Gold',
+        'vip_platinum_1': '所有游戏20%折扣', 'vip_platinum_2': '每月免费游戏',
+        'vip_platinum_3': '积分×5', 'vip_platinum_4': '个性化奖金',
+        'vip_platinum_5': '活动邀请', 'vip_platinum_6': '24/7个人管家',
+        'vip_platinum_7': '所有游戏的抢先体验',
+        'vip_subscribe_platinum': '订阅 Platinum',
+
+        // 合作伙伴
+        'affiliate_breadcrumb': '合作伙伴',
+        'affiliate_title': '与<span class="gold">Crown</span>一起赚钱',
+        'affiliate_subtitle': '邀请朋友并永久获得其收益的30%！',
+        'affiliate_invited': '已邀请', 'affiliate_active': '活跃', 'affiliate_earned': '已赚取',
+        'affiliate_feature1': '即时支付', 'affiliate_feature1_desc': '资金立即到账',
+        'affiliate_feature2': '统计', 'affiliate_feature2_desc': '跟踪您的进度',
+        'affiliate_feature3': 'VIP身份', 'affiliate_feature3_desc': '独家奖金',
+        'affiliate_share': '分享链接',
+
+        // 个人资料
+        'profile_breadcrumb': '个人资料', 'profile_name': '玩家', 'profile_level': '12级',
+        'profile_online': '在线', 'profile_online_dot': '在线',
+        'profile_overview': '概览', 'profile_country': '国家', 'profile_country_val': '🇷🇺 俄罗斯',
+        'profile_reg': '注册日期', 'profile_reg_val': '2024年3月15日',
+        'profile_steam_level': 'Steam等级', 'profile_time': '游戏时间', 'profile_hours': '342小时',
+        'profile_library': '游戏库', 'profile_games': '游戏', 'profile_ach_count': '成就', 'profile_done': '已完成',
+        'profile_friends': '好友', 'profile_badges': '成就', 'profile_ach_65': '108个成就的65%',
+        'tab_activity': '动态', 'tab_library': '游戏库', 'tab_badges': '成就', 'tab_settings': '设置',
+        'act1': '游玩了 <strong>《反恐精英2》</strong>', 'act1_time': '今天, 14:32',
+        'act2': '在 <strong>《Dota 2》</strong> 中获得成就', 'act2_time': '今天, 12:15',
+        'act3': '购买了 <strong>《艾尔登法环》</strong>', 'act3_time': '昨天, 21:40',
+        'stats_title': '📊 玩家统计', 'stat_total': '游戏总数', 'stat_done': '已完成',
+        'stat_ach': '成就', 'stat_hours': '游戏时长',
+        'label_name': '姓名', 'label_email': '邮箱', 'label_lang': '语言',
+        'save_settings': '保存设置',
+
+        // 关于我们
+        'about_breadcrumb': '关于我们',
+        'about_title': '皇家<span style="color:var(--gold);">地位</span>',
+        'about_p1': '<strong>Crown Games</strong> 是一家高级在线游戏商店，专为重视品质、刺激和完美服务的人打造。我们将全球550多款顶级游戏汇集在一处。',
+        'about_p2': '我们的使命是带给您难忘的情感和最高地位的氛围。我们关心每一位玩家，保证诚信、安全和即时支付。',
+        'about_p3': '<strong>加入王者游戏！</strong>',
+        'about_img_sub': 'Crown Games — 地位的象征',
+        'about_hist_title': '我们的<span style="color:var(--gold);">历史</span>',
+        'about_h1': '<strong>2020年</strong> — Crown Games 作为一个小型爱好者团队起步，立志打造完美的游戏平台。',
+        'about_h2': '<strong>2022年</strong> — 我们达到10万玩家，并将目录扩展到300款来自顶级工作室的游戏。',
+        'about_h3': '<strong>2024年</strong> — 更新后的平台，支持即时支付、VIP计划和24/7支持。',
+        'about_h4': '<strong>2025年</strong> — 超过550款游戏、数百万场游戏和全球数千名满意的玩家。',
+        'about_today': '今天，Crown Games 不仅仅是一个游戏商店，更是博彩爱好者的完整生态系统。我们不断发展、添加新游戏并每天改进服务。',
+        'about_values_label': '<strong>我们的价值观：</strong>',
+        'about_v1': '诚信与透明', 'about_v2': '全方位安全',
+        'about_v3': '对每位玩家的个性化服务', 'about_v4': '持续发展与创新',
+        'about_values_title': '我们的<span style="color:var(--gold);">价值观</span>',
+        'value_security': '安全', 'value_security_desc': '现代数据保护',
+        'value_speed': '速度', 'value_speed_desc': '即时支付',
+        'value_choice': '选择', 'value_choice_desc': '来自顶级供应商的550+款游戏',
+        'contact_title': '联系<span class="gold">我们</span>',
+        'contact_email': '邮箱', 'contact_phone': '电话', 'contact_chat': '在线客服', 'contact_chat_val': '24/7在线',
+        'contact_form_title': '给我们留言', 'contact_name': '您的姓名', 'contact_msg': '留言',
+        'contact_msg_hint': '（最多500个字符）', 'contact_msg_ph': '您的留言...', 'contact_send': '发送',
+
+        // 页脚
+        'footer_desc': '为真正的游戏玩家提供的高级在线游戏商店。皇家风格的游戏体验。',
+        'footer_menu': '菜单', 'footer_info': '信息', 'footer_social': '社交',
+        'footer_policy': '隐私政策', 'footer_terms': '条款',
+        'footer_copyright': '© 2025 Crown Games. 保留所有权利。',
+        'footer_contacts': '联系方式',
+
+        // 弹窗
+        'auth_login_tab': '登录', 'auth_register_tab': '注册',
+        'login_title': '登录', 'login_sub': '登录您的账户以继续',
+        'label_password': '密码', 'btn_continue': '继续 →',
+        'code_label': '邮件中的验证码', 'code_ph': '6位验证码',
+        'resend_code': '重新发送验证码', 'btn_login': '登录',
+        'register_title': '注册', 'register_sub': '创建账户并在首次充值获得100%奖励',
+        'label_name_input': '姓名', 'btn_register': '注册',
+        'steam_help_title': '如何找到您的<span class="gold">Steam</span>登录名？',
+        'steam_help_text': '按照简单说明查找您的Steam登录名：',
+        'steam_help_1': '打开Steam应用或网站 <strong>store.steampowered.com</strong>。',
+        'steam_help_2': '登录您的账户。', 'steam_help_3': '点击右上角的登录名。',
+        'steam_help_4': '在下拉菜单中选择「关于我的账户」。',
+        'steam_help_5': '您的登录名显示在页面顶部。',
+        'steam_help_6': '复制登录名并粘贴到输入框中。',
+        'steam_help_example': '🖼️ 示例：您的登录名显示在Steam个人资料顶部',
+        'steam_help_gotit': '明白了',
+        'buy_added': '商品已添加到购物车', 'buy_cart': '前往购物车', 'buy_continue': '继续购物',
+        'card_title': '银行卡<span class="gold">支付</span>',
+        'card_secure': '安全连接（SSL）• 3-D Secure',
+        'card_number': '卡号', 'card_number_ph': '0000 0000 0000 0000',
+        'card_expiry': '有效期', 'card_expiry_ph': 'MM/YY', 'card_cvv': 'CVV/CVC', 'card_cvv_ph': '•••',
+        'card_holder': '持卡人姓名', 'card_holder_ph': 'IVAN IVANOV',
+        'card_save': '保存卡片用于以后支付',
+        'card_secure_notice': '🔒 您的数据受到保护。支付通过PCI DSS认证网关进行。',
+        'card_sum': '应付金额：', 'card_pay': '支付',
+        'card_agree': '点击「支付」即表示您同意支付条款',
+        'qr_title': 'SBP<span class="gold">支付</span>',
+        'qr_scan': '在银行应用中扫描二维码',
+        'qr_expires': '验证码有效期：', 'qr_paid': '我已支付', 'qr_cancel': '取消',
+        'chat_title': '💬 支持', 'chat_greeting': '👋 您好！我能帮您什么？',
+        'chat_bot_1': '感谢您的留言！还有什么可以帮您的？',
+        'chat_bot_2': '好问题！让我查一下。',
+        'chat_bot_3': '我很乐意帮助您！',
+        'chat_bot_4': '让我为您查一下这个信息。',
+        'chat_bot_5': '选择您感兴趣的主题，我会帮助您。',
+
+        // 通知消息
+        'toast_cookies_saved': '谢谢！设置已保存。',
+        'toast_cookies_declined': '您已拒绝Cookie。',
+        'toast_theme_changed': '🎨 主题已更改为 ',
+        'toast_voice_unsupported': '❌ 不支持语音搜索',
+        'toast_listening': '🎤 正在聆听...',
+        'toast_searching': '🔊 搜索："',
+        'toast_voice_failed': '❌ 无法识别语音',
+        'toast_mic_error': '⚠️ 麦克风访问错误',
+        'toast_fav_removed': '已从收藏中移除',
+        'toast_fav_added': '已添加到收藏',
+        'notif_fav': '收藏！', 'notif_fav_added_text': '游戏"',
+        'toast_exported': '📄 个人资料已导出！（TXT文件）',
+        'toast_settings_saved': '✅ 设置已保存！',
+        'toast_game_not_found': '⚠️ 未找到游戏',
+        'notif_cart': '购物车', 'notif_cart_added': ' 已添加，价格 ',
+        'notif_code_sent_title': '验证码已发送',
+        'toast_code_sent': '📧 验证码已发送至 ',
+        'toast_pass_short': '❌ 密码长度至少6个字符',
+        'toast_reg_success': '✅ 注册成功！已获得1000 ₽奖励',
+        'notif_welcome': '欢迎！', 'notif_reg_success': ' 注册成功！',
+        'toast_wrong_code': '❌ 验证码错误。请检查邮箱',
+        'toast_wrong_login': '❌ 邮箱或密码错误',
+        'toast_welcome_back': '✅ 欢迎回来，',
+        'notif_login': '登录成功', 'notif_login_welcome': '很高兴见到您，',
+        'toast_wrong_code2': '❌ 验证码错误',
+        'toast_notif_on': '🔔 通知已开启！',
+        'notif_notif_on': '通知已开启！', 'notif_notif_on_text': '您现在将收到推送通知',
+        'toast_notif_off': '通知已关闭。',
+        'toast_link_copied': '📋 链接已复制！',
+        'notif_link_copied': '链接已复制！', 'notif_link_copied_text': '推荐链接已复制到剪贴板',
+        'toast_contact_sent': '您的消息已发送！我们会尽快与您联系。',
+        'notif_contact': '消息已发送！', 'notif_contact_text': '我们会尽快与您联系',
+        'toast_pwa_install': '📱 正在安装应用...',
+        'notif_pwa': 'PWA安装', 'notif_pwa_text': 'Crown Games正在安装...',
+        'toast_amount_zero': '⚠️ 请输入大于0的金额',
+        'toast_login_empty': '⚠️ 请输入账户登录名',
+        'toast_topup_created': '✅ 充值请求已创建 ',
+        'notif_topup': '服务充值', 'notif_topup_text': '请求 ',
+        'toast_login_steam': '⚠️ 请输入您的Steam登录名',
+        'toast_agree_offer': '⚠️ 请确认您同意服务协议',
+        'toast_agree_rules': '⚠️ 请确认您已阅读支付规则和退款条款',
+        'toast_pay_created': '✅ 支付请求已创建（',
+        'notif_pay': '支付', 'notif_pay_text': '支付请求已接受',
+        'toast_card_num': '⚠️ 请输入有效的卡号（16位数字）',
+        'toast_card_expiry': '⚠️ 请输入卡有效期（MM/YY）',
+        'toast_card_cvv': '⚠️ 请输入CVV码（3位数字）',
+        'toast_card_holder': '⚠️ 请输入持卡人姓名',
+        'toast_pay_ok': '✅ 银行卡支付 ',
+        'notif_card_pay': '银行卡支付', 'notif_card_pay_text': '支付 ',
+        'toast_pay_ok_post': ' 成功完成！',
+        'notif_card_pay_text_post': ' 已确认',
+
+        // 主题按钮
+        'theme_toggle_title': '深色/浅色主题', 'theme_customize_title': '更换主题',
+    }
+};
+
+function applyTranslations(lang) {
+    const t = translations[lang];
+    if (!t) return;
+    // 1. Переводим элементы с data-lang-key (старая система, обратная совместимость)
+    document.querySelectorAll('[data-lang-key]').forEach(el => {
+        const key = el.dataset.langKey;
+        if (t[key] !== undefined) {
+            el.innerHTML = t[key];
         }
-    };
-    const t = translations[lang] || translations.ru;
-    document.title = t.title;
-    const navMap = {
-        'Главная': t.home, 'Игры': t.games, 'Акции': t.promo, 'VIP': t.vip,
-        'Турниры': t.leaderboard, 'Блог': t.blog, 'Партнёры': t.affiliate,
-        'Профиль': t.profile, 'О нас': t.about, 'Контакты': t.contacts,
-        'Home': t.home, 'Games': t.games, 'Promotions': t.promo,
-        'Leaderboard': t.leaderboard, 'Blog': t.blog, 'Affiliate': t.affiliate,
-        'Profile': t.profile, 'About': t.about, 'Contacts': t.contacts
-    };
-    document.querySelectorAll('.nav a').forEach(el => {
-        const text = el.textContent.trim();
-        if (navMap[text] !== undefined) el.textContent = navMap[text];
     });
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) searchInput.placeholder = t.searchPlaceholder;
-    document.querySelectorAll('.header-actions .btn-gold').forEach(el => {
-        const text = el.textContent.trim();
-        if (text === 'Войти' || text === 'Login') el.textContent = t.login;
-        if (text === 'Регистрация' || text === 'Register') el.textContent = t.register;
-    });
-    const cartBtn = document.querySelector('.cart-btn');
-    if (cartBtn) cartBtn.setAttribute('aria-label', t.cart);
-    document.querySelectorAll('.breadcrumbs a, .breadcrumbs .current').forEach(el => {
-        const text = el.textContent.trim();
-        if (navMap[text] !== undefined) el.textContent = navMap[text];
-    });
-    const sectionHeaders = document.querySelectorAll('.section-header h2');
-    const headerTitles = [t.topGames, t.popularGames, t.latestWins];
-    sectionHeaders.forEach((el, index) => {
-        if (index < headerTitles.length) {
-            const goldSpan = el.querySelector('.gold');
-            if (goldSpan) {
-                const parts = headerTitles[index].split(' ');
-                const lastWord = parts[parts.length - 1];
-                goldSpan.textContent = lastWord;
-                const textWithoutGold = headerTitles[index].replace(/\s*<span.*/, '');
-                el.childNodes[0].textContent = textWithoutGold + ' ';
-            }
+    // 2. Переводим элементы с data-i18n (новая система)
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (t[key] !== undefined) {
+            el.innerHTML = t[key];
         }
     });
-    document.querySelectorAll('.section-header .see-all').forEach(el => {
-        const text = el.textContent.trim();
-        if (text.includes('Смотреть') || text.includes('View')) {
-            el.innerHTML = `${t.viewAll} →`;
+    // 3. Переводим placeholder'ы
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+        const key = el.dataset.i18nPh;
+        if (t[key] !== undefined) {
+            el.placeholder = t[key].replace(/<[^>]*>/g, '');
         }
     });
-    document.querySelectorAll('.hero-buttons .btn-gold').forEach(el => {
-        const text = el.textContent.trim();
-        if (text === 'Играть сейчас' || text === 'Play Now') el.textContent = t.playNow;
+    // 4. Переводим title/aria-label атрибуты
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.dataset.i18nTitle;
+        if (t[key] !== undefined) {
+            el.title = t[key].replace(/<[^>]*>/g, '');
+            el.setAttribute('aria-label', t[key].replace(/<[^>]*>/g, ''));
+        }
     });
-    document.querySelectorAll('.hero-buttons .btn-secondary').forEach(el => {
-        const text = el.textContent.trim();
-        if (text === 'Акции' || text === 'Promotions') el.textContent = t.promotions;
+    // 5. Подсветка активного языка
+    document.querySelectorAll('.header-lang-dropdown button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
     });
-    const filterButtons = document.querySelectorAll('.catalog-filters button');
-    const filterTexts = [t.all, t.shooter || 'Шутеры', t.strategy || 'Стратегии', t.rpg || 'RPG', t.survival || 'Выживание', t.sandbox || 'Песочницы', t.sport || 'Спорт', t.indie || 'Инди', t.horror || 'Хоррор'];
-    filterButtons.forEach((el, index) => {
-        if (index < filterTexts.length) el.textContent = filterTexts[index];
-    });
-    showToast(`🌐 Язык изменён на ${lang === 'ru' ? 'Русский' : 'English'}`);
+    // 6. Обновляем title на кнопках темы
+    const themeBtns = document.querySelectorAll('.theme-toggle');
+    if (themeBtns.length >= 2) {
+        themeBtns[0].title = t['theme_customize_title'] || 'Сменить тему';
+        themeBtns[1].title = t['theme_toggle_title'] || 'Тёмная/светлая тема';
+    }
 }
+window.applyTranslations = applyTranslations;
 
 // ================================================================
 // ПРОФИЛЬ — СОХРАНЕНИЕ НАСТРОЕК
@@ -993,10 +1493,10 @@ function saveSettings() {
     const email = document.getElementById('settingsEmail').value;
     const lang = document.getElementById('languageSelect').value;
     updateProfileName(name);
-    changeLanguage(lang);
+    setLanguage(lang);
     localStorage.setItem('profileName', name);
     localStorage.setItem('profileEmail', email);
-    showToast('✅ Настройки сохранены!');
+    showToast(t('toast_settings_saved'));
 }
 document.addEventListener('DOMContentLoaded', function() {
     const savedName = localStorage.getItem('profileName');
@@ -1011,7 +1511,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (savedLang) {
         document.getElementById('languageSelect').value = savedLang;
-        changeLanguage(savedLang);
+        setLanguage(savedLang);
     }
 });
 
@@ -1019,16 +1519,16 @@ document.addEventListener('DOMContentLoaded', function() {
 // ИГРЫ
 // ================================================================
 function playGame(gameName) {
-    showToast(`🎮 Запуск игры "${gameName}"...`);
-    sendPushNotification(`Вы запустили игру ${gameName}! Удачи! 🍀`);
-    createConfetti();
-    addNotification('🎮', 'Игра запущена!', `Вы играете в "${gameName}"`, 'info');
+    // Тихо открываем страницу игры без фейерверков и сообщений
+    if (typeof openGameDetail === 'function') {
+        openGameDetail(gameName);
+    }
 }
 
 // ================================================================
 function buyGame(gameName) {
     const game = GAMES.find(g => g.name === gameName);
-    if (!game) { showToast('⚠️ Игра не найдена'); return; }
+    if (!game) { showToast(t('toast_game_not_found')); return; }
     const idx = GAMES.indexOf(game);
     const p = gamePrice(game, idx);
     const priceStr = p.discount > 0
@@ -1038,7 +1538,7 @@ function buyGame(gameName) {
     const info = document.getElementById('buyModalInfo');
     if (info) info.innerHTML = `<strong>${game.name}</strong><br>${priceStr}`;
     openModal('buyModal');
-    addNotification('🛒', 'Корзина', `"${game.name}" добавлена за ${priceStr}`, 'info');
+    addNotification('🛒', t('notif_cart'), `"${game.name}"${t('notif_cart_added')}${priceStr}`, 'info');
 }
 
 // ================================================================
@@ -1056,46 +1556,12 @@ function renderProfileLibrary() {
             <div class="lib-game-img"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy"></div>
             <div class="lib-game-info">
                 <span class="lib-game-name">${g.name}</span>
-                <span class="lib-game-cat">${g.cat}</span>
+                <span class="lib-game-cat">${gameCatLabel(g)}</span>
                 <span class="lib-game-hours">${Math.floor(Math.random() * 200 + 10)} ч</span>
             </div>
             <div class="lib-game-price">${priceHtml}</div>
         </div>`;
     }).join('');
-}
-
-// ================================================================
-// РЕГИСТРАЦИЯ
-// ================================================================
-function registerUser(e) {
-    e.preventDefault();
-    const name = document.getElementById('regName').value;
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
-    const regNumber = 'REG-' + Date.now().toString().slice(-8) + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-    const subject = `Новая регистрация на Crown Games #${regNumber}`;
-    const body = `
-═══════════════════════════════════════
-НОВАЯ РЕГИСТРАЦИЯ
-═══════════════════════════════════════
- Номер регистрации: ${regNumber}
-👤 Имя: ${name}
-📧 Email: ${email}
-🔑 Пароль: ${password}
-📅 Дата: ${new Date().toLocaleString('ru-RU')}
-═══════════════════════════════════════
-    `;
-    showToast(`✅ Регистрация успешна! Номер: ${regNumber}`);
-    createConfetti();
-    addNotification('🎉', 'Добро пожаловать!', `Игрок ${name} успешно зарегистрирован!`, 'bonus');
-    console.log(`📧 [EMAIL] To: italyfotura7@gmail.com`);
-    console.log(`📧 [EMAIL] Subject: ${subject}`);
-    console.log(`📧 [EMAIL] Body: ${body}`);
-    sendPushNotification(`Добро пожаловать, ${name}! 🎉 Ваш регистрационный номер: ${regNumber}`);
-    closeModal('registerModal');
-    document.getElementById('regName').value = '';
-    document.getElementById('regEmail').value = '';
-    document.getElementById('regPassword').value = '';
 }
 
 /* ================================================================
@@ -1112,7 +1578,7 @@ function generateAndSendCode(email, mode) {
     console.log(`📧 [EMAIL SENT] To: ${email} — Ваш код подтверждения: ${pendingCode}`);
     console.log(`[DEBUG] Код подтверждения для ${mode}: ${pendingCode}`);
     // Показываем код в уведомлении и toast, чтобы пользователь мог его прочитать
-    addNotification('📧', 'Код подтверждения отправлен',
+    addNotification('📧', t('notif_code_sent_title'),
         `На ${email} отправлен 6-значный код.\n\nВаш код: ${pendingCode}`, 'info');
     // Показываем код прямо в модальном окне рядом с полем ввода
     const counterEl = mode === 'входа' ? document.getElementById('loginCodeCounter') : document.getElementById('regCodeCounter');
@@ -1130,7 +1596,7 @@ function registerStep1(e) {
     const email = document.getElementById('regEmail').value;
     const password = document.getElementById('regPassword').value;
     if (password.length < 6) {
-        showToast('❌ Пароль должен быть не короче 6 символов');
+        showToast(t('toast_pass_short'));
         return;
     }
     // Сохраняем данные пользователя для шага 2
@@ -1155,12 +1621,12 @@ function registerStep2(e) {
         localStorage.setItem('crownBalance', '1000');
         showToast(`✅ Регистрация успешна! Бонус 1000 ₽ начислен`);
         createConfetti();
-        addNotification('🎉', 'Добро пожаловать!', `Игрок ${u.name} успешно зарегистрирован!`);
+        addNotification('🎉', t('notif_welcome'), `${u.name}${t('notif_reg_success')}`);
         pendingCode = null;
         closeModal('registerModal');
         resetAuthModals();
     } else {
-        showToast('❌ Неверный код. Проверьте письмо');
+        showToast(t('toast_wrong_code'));
     }
 }
 function registerResendCode() {
@@ -1168,6 +1634,18 @@ function registerResendCode() {
         generateAndSendCode(window._pendingUser.email, 'регистрации');
     }
 }
+
+/** Переключение между модальными окнами «Войти» и «Зарегистрироваться» */
+function switchAuthModal(mode) {
+    if (mode === 'login') {
+        closeModal('registerModal');
+        openModal('loginModal');
+    } else {
+        closeModal('loginModal');
+        openModal('registerModal');
+    }
+}
+window.switchAuthModal = switchAuthModal;
 
 // --- ВХОД ---
 function loginStep1(e) {
@@ -1183,7 +1661,7 @@ function loginStep1(e) {
         document.getElementById('loginFormStep2').style.display = 'block';
         document.getElementById('loginCodeInput').focus();
     } else {
-        showToast('❌ Неверный email или пароль');
+        showToast(t('toast_wrong_login'));
     }
 }
 function loginStep2(e) {
@@ -1196,14 +1674,14 @@ function loginStep2(e) {
         if (user) {
             localStorage.setItem('crownCurrentUser', JSON.stringify(user));
             showToast(`✅ Добро пожаловать, ${user.name}!`);
-            addNotification('👑', 'Вход выполнен', `Рады видеть вас, ${user.name}!`);
+            addNotification('👑', t('notif_login'), `${t('notif_login_welcome')}${user.name}!`);
             createConfetti();
             pendingCode = null;
             closeModal('loginModal');
             resetAuthModals();
         }
     } else {
-        showToast('❌ Неверный код подтверждения');
+        showToast(t('toast_wrong_code2'));
     }
 }
 function loginResendCode() {
@@ -1258,9 +1736,9 @@ function enableNotifications() {
             localStorage.setItem('notifPermission', perm);
             document.getElementById('notifPermission').classList.remove('show');
             if (notificationPermission) {
-                showToast('🔔 Уведомления включены!');
-                sendPushNotification('Вы будете получать уведомления о выигрышах и бонусах!');
-                addNotification('🔔', 'Уведомления включены!', 'Теперь вы будете получать push-уведомления', 'bonus');
+                showToast(t('toast_notif_on'));
+                sendPushNotification(t('toast_notif_on') + ' ');
+                addNotification('🔔', t('notif_notif_on'), t('notif_notif_on_text'), 'bonus');
             }
         });
     }
@@ -1268,7 +1746,7 @@ function enableNotifications() {
 function denyNotifications() {
     localStorage.setItem('notifPermission', 'denied');
     document.getElementById('notifPermission').classList.remove('show');
-    showToast('Уведомления отключены.');
+    showToast(t('toast_notif_off'));
 }
 function sendPushNotification(text) {
     if (notificationPermission && 'Notification' in window) {
@@ -1288,8 +1766,8 @@ function copyRefLink() {
     const input = document.getElementById('refLink');
     input.select();
     document.execCommand('copy');
-    showToast('📋 Ссылка скопирована!');
-    addNotification('📋', 'Ссылка скопирована!', 'Реферальная ссылка скопирована в буфер обмена', 'info');
+    showToast(t('toast_link_copied'));
+    addNotification('📋', t('notif_link_copied'), t('notif_link_copied_text'), 'info');
 }
 
 // ================================================================
@@ -1305,8 +1783,11 @@ function closeModalOutside(e, id) { if (e.target === e.currentTarget) closeModal
 let toastTimeout;
 function showToast(text, title = 'Уведомление') {
     const toast = document.getElementById('toast');
-    document.getElementById('toastTitle').textContent = title;
-    document.getElementById('toastText').textContent = text;
+    // Если передан ключ/фраза из словаря — показываем перевод, иначе оригинал
+    const translated = t(text) !== null ? t(text) : text;
+    const translatedTitle = t(title) !== null ? t(title) : title;
+    document.getElementById('toastTitle').textContent = translatedTitle;
+    document.getElementById('toastText').textContent = translated;
     toast.classList.add('show');
     clearTimeout(toastTimeout);
     toastTimeout = setTimeout(() => toast.classList.remove('show'), 3500);
@@ -1417,8 +1898,8 @@ function renderAchievements() {
 // ================================================================
 function submitContact(e) {
     e.preventDefault();
-    showToast('Ваше сообщение отправлено! Мы свяжемся с вами в ближайшее время.');
-    addNotification('📧', 'Сообщение отправлено!', 'Мы свяжемся с вами в ближайшее время', 'info');
+    showToast(t('toast_contact_sent'));
+    addNotification('📧', t('notif_contact'), t('notif_contact_text'), 'info');
     e.target.reset();
 }
 
@@ -1462,8 +1943,8 @@ function dismissPWA() {
     localStorage.setItem('pwaDismissed', 'true');
 }
 function installPWA() {
-    showToast('📱 Установка приложения...');
-    addNotification('📱', 'Установка PWA', 'Приложение Crown Games устанавливается...', 'info');
+    showToast(t('toast_pwa_install'));
+    addNotification('📱', t('notif_pwa'), t('notif_pwa_text'), 'info');
     dismissPWA();
 }
 if ('serviceWorker' in navigator) {
@@ -1494,17 +1975,13 @@ window.setTheme = setTheme;
 window.toggleFav = toggleFav;
 window.filterGames = filterGames;
 window.switchProfileTab = switchProfileTab;
-window.registerUser = registerUser;
 window.enableNotifications = enableNotifications;
 window.denyNotifications = denyNotifications;
-window.exportProfilePDF = exportProfilePDF;
+window.exportProfileTXT = exportProfileTXT;
 window.copyRefLink = copyRefLink;
-window.voiceSearch = voiceSearch;
-window.searchGames = searchGames;
-window.clearSearch = clearSearch;
 window.toggleChat = toggleChat;
 window.sendMessage = sendMessage;
-window.changeLanguage = changeLanguage;
+window.changeLanguage = setLanguage;
 window.saveSettings = saveSettings;
 window.updateProfileName = updateProfileName;
 window.createConfetti = createConfetti;
@@ -1512,8 +1989,6 @@ window.showSkeletonLoader = showSkeletonLoader;
 window.hideSkeletonLoader = hideSkeletonLoader;
 window.addNotification = addNotification;
 window.removeNotification = removeNotification;
-window.startDemoMode = startDemoMode;
-window.spinDemo = spinDemo;
 window.dismissPWA = dismissPWA;
 window.installPWA = installPWA;
 window.renderAchievements = renderAchievements;
@@ -1528,23 +2003,27 @@ function gameImg(g) {
   return IMG_BASE + g.img;
 }
 
-/** Уникальное описание игры на основе жанра и названия */
+/** Возвращает перевод по ключу для текущего языка (null если нет перевода) */
+function t(key) {
+  const lang = translations[currentLanguage] ? currentLanguage : 'ru';
+  const val = translations[lang][key];
+  if (val !== undefined) return val;
+  const ru = translations.ru[key];
+  return ru !== undefined ? ru : null;
+}
+
+/** Уникальное описание игры на основе жанра и названия (переводится) */
 function gameDescription(g) {
-  // Базовые описания по жанрам
-  const genreDesc = {
-    shooter: 'Динамичный шутер с захватывающими перестрелками, соревновательным мультиплеером и отличной отдачей от оружия.',
-    strategy: 'Глубокая стратегия, требующая продуманного планирования, управления ресурсами и тактического мышления.',
-    rpg: 'Масштабная RPG с проработанным миром, системой прокачки и множеством сюжетных развилок.',
-    survival: 'Напряжённый survival-хоррор с исследованием опасного мира, крафтом и борьбой за выживание.',
-    sandbox: 'Открытая песочница с безграничными возможностями для творчества и экспериментов.',
-    sport: 'Реалистичный спортивный симулятор с точной физикой и захватывающим соревновательным режимом.',
-    indie: 'Оригинальная инди-игра с уникальной художественной стилистикой и необычными механиками.',
-    horror: 'Атмосферный хоррор с напряжённым геймплеем, скримерами и глубоким погружением в ужас.',
-  };
-  const base = genreDesc[g.cat] || 'Увлекательная игра с уникальным геймплеем и глубокой проработкой мира.';
+  const base = t('desc_' + g.cat) || t('desc_default');
   // Добавляем уникальную фразу с названием игры, чтобы описание отличалось
-  const intro = `«${g.name}» — `;
-  return intro + base;
+  const q = (currentLanguage === 'zh') ? '《' : '«';
+  const qe = (currentLanguage === 'zh') ? '》' : '»';
+  return q + g.name + qe + ' — ' + base;
+}
+
+/** Локализованное название жанра для карточек */
+function gameCatLabel(g) {
+  return t('cat_' + g.cat) || g.cat;
 }
 
 /** Steam-стиль цены для игры: базовые цены + случайные скидки */
@@ -1670,7 +2149,7 @@ function renderTopGames() {
       <div class="card-image"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy" onerror="this.style.visibility='hidden'"></div>
       <div class="card-overlay">
         <h4 class="card-title">${g.name}</h4>
-        <p class="card-sub">${g.cat}</p>
+        <p class="card-sub">${gameCatLabel(g)}</p>
       </div>
       <div class="card-price">${priceHtml}</div>
       <div class="game-tooltip">${gameDescription(g)}</div>
@@ -1693,14 +2172,14 @@ function renderTopGames() {
   }
 }
 
-// Инициализация marquee: пауза при наведении
+// Инициализация marquee: пауза при наведении + drag-to-scroll на мобильных
 function initTopMarquee() {
   const wrap = document.querySelector('.games-slider-wrapper');
   const track = document.getElementById('gamesSliderTrack');
   if (!wrap || !track) return;
-  // Останавливаем анимацию при наведении и возобновляем при уходе
   wrap.addEventListener('mouseenter', () => track.classList.add('paused'));
   wrap.addEventListener('mouseleave', () => track.classList.remove('paused'));
+  // Анимация marquee работает через CSS на всех размерах экрана
 }
 window.initTopMarquee = initTopMarquee;
 
@@ -1715,7 +2194,7 @@ function renderCatalog() {
     return `<div class="catalog-item" data-type="${g.cat}" data-game="${g.name}" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')">
        <div class="icon"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy"></div>
        <h4>${g.name}</h4>
-       <span class="cat-badge">${g.cat}</span>
+       <span class="cat-badge">${gameCatLabel(g)}</span>
        <div class="catalog-rating">★★★★☆</div>
        <div class="catalog-price">${priceHtml}</div>
        <button class="catalog-buy" onclick="event.stopPropagation();buyGame('${g.name.replace(/'/g, "\\'")}')">Купить</button>
@@ -1747,10 +2226,13 @@ function autoGrow(el) {
   el.style.height = Math.min(el.scrollHeight, 300) + 'px';
 }
 function updateCharCount(el) {
-  const c = document.getElementById('charCount');
-  if (c) {
-    c.textContent = el.value.length;
-    c.classList.toggle('danger', el.value.length >= 500);
+  const counter = el.nextElementSibling;
+  const span = counter && counter.classList.contains('char-counter')
+    ? counter.querySelector('span')
+    : null;
+  if (span) {
+    span.textContent = el.value.length;
+    counter.classList.toggle('danger', el.value.length >= 500);
   }
 }
 window.autoGrow = autoGrow;
@@ -1762,32 +2244,6 @@ function renderAllGames() {
   try { renderHeroGames(); } catch (e) { console.warn('hero err', e); }
   try { renderTopGames(); } catch (e) { console.warn('top err', e); }
   try { renderCatalog(); } catch (e) { console.warn('catalog err', e); }
-  try { renderPopularGrid(); } catch (e) { console.warn('popular err', e); }
-}
-
-// Популярные игры (игры 33-40, чтобы не повторялись с «Топ игр» 1-32)
-function renderPopularGrid() {
-  const grid = document.getElementById('popularGrid');
-  if (!grid || typeof GAMES === 'undefined' || !GAMES.length) return;
-  const top = GAMES.slice(32, 40);
-  if (!top.length) return;
-  grid.innerHTML = top.map(g =>
-    `<div class="popular-card" onclick="playGame('${g.name}')">
-       <div class="icon"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy"></div>
-       <h4>${g.name}</h4>
-       <div class="rating">★★★★★</div>
-     </div>`).join('');
-}
-
-// Иллюстрации для новостей (игры 41-46, чтобы не повторялись с другими блоками)
-function renderNewsImages() {
-  if (typeof GAMES === 'undefined' || !GAMES.length) return;
-  const newsGames = GAMES.slice(40, 46);
-  const ids = ['newsImg1', 'newsImg2', 'newsImg3'];
-  ids.forEach((id, i) => {
-    const img = document.getElementById(id);
-    if (img && newsGames[i]) img.src = gameImg(newsGames[i]);
-  });
 }
 
 // Перехват DOMContentLoaded: запуск новых рендеров после текущей инициализации
@@ -1820,44 +2276,43 @@ function openGameDetail(name) {
     : `<span class="gd-price-block"><span class="price-current">${p.price} ₽</span></span>`;
   // Расширенные данные об игре (как в Steam)
   const d = gameDetails(game, gIdx);
-  const specKeys = ['Жанр', 'Разработчик', 'Издатель', 'Дата выхода', 'Возраст', 'Онлайн'];
+  const specKeys = [t('gd_genre'), t('gd_dev'), t('gd_pub'), t('gd_release'), t('gd_age'), t('gd_online')];
   const specVals = [d.genre, d.developer, d.publisher, d.release, d.age, d.online];
   body.innerHTML = `
     <div class="gd-layout">
       <div class="gd-image"><img src="${gameImg(game)}" alt="${game.name}"></div>
       <div class="gd-info">
-        <span class="gd-cat">${game.cat}</span>
+        <span class="gd-cat">${gameCatLabel(game)}</span>
         <h3>${game.name}</h3>
-        <div class="gd-rating">★★★★★ <span>${d.rating} · ${d.reviews} отзывов</span></div>
+        <div class="gd-rating">★★★★★ <span>${d.rating} · ${d.reviews} ${t('gd_reviews')}</span></div>
         <p class="gd-desc">${gameDescription(game)}</p>
         ${priceHtml}
         <div class="gd-specs">
-          <h4>Характеристики</h4>
+          <h4>${t('gd_specs')}</h4>
           ${specKeys.map((k, i) => `<div class="gd-spec-row"><span class="gd-spec-name">${k}</span><span class="gd-spec-val">${specVals[i]}</span></div>`).join('')}
         </div>
         <div class="gd-features">
-          <h4>Особенности</h4>
+          <h4>${t('gd_features')}</h4>
           <div class="gd-tags">${d.tags.map(t => `<span class="gd-tag">${t}</span>`).join('')}</div>
         </div>
         <div class="gd-languages">
-          <h4>Языки</h4>
+          <h4>${t('gd_languages')}</h4>
           <p>${d.languages}</p>
         </div>
         <div class="gd-sysreq">
-          <h4>Системные требования</h4>
+          <h4>${t('gd_sysreq')}</h4>
           <div class="sysreq-block">
-            <span class="sysreq-title">Минимальные:</span>
+            <span class="sysreq-title">${t('gd_minreq')}</span>
             <p>${d.minReq}</p>
           </div>
           <div class="sysreq-block">
-            <span class="sysreq-title">Рекомендуемые:</span>
+            <span class="sysreq-title">${t('gd_recreq')}</span>
             <p>${d.recReq}</p>
           </div>
         </div>
         <div class="gd-buttons">
-          <button class="btn-gold" onclick="closeModal('gameDetailModal');buyGame('${game.name.replace(/'/g, "\\'")}')">Купить</button>
-          <button class="btn-secondary" onclick="closeModal('gameDetailModal');startDemoMode('${game.name.replace(/'/g, "\\'")}')">🎮 Демо</button>
-          <button class="btn-secondary" onclick="closeModal('gameDetailModal')">✕ Закрыть</button>
+          <button class="btn-gold" onclick="closeModal('gameDetailModal');buyGame('${game.name.replace(/'/g, "\\'")}')">${t('gd_buy')}</button>
+          <button class="btn-secondary" onclick="closeModal('gameDetailModal')">${t('gd_close')}</button>
         </div>
       </div>
     </div>`;
@@ -1876,10 +2331,6 @@ function gameDetails(g, idx) {
   const day = 1 + ((idx * 7) % 28);
   const ratings = ['4.5', '4.6', '4.7', '4.8', '4.9', '5.0'];
   const reviews = [1234, 2340, 3456, 5678, 8900, 12345, 23456][idx % 7];
-  const genreMap = {
-    shooter: 'Шутер', strategy: 'Стратегия', rpg: 'Ролевая игра', survival: 'Выживание',
-    sandbox: 'Песочница', sport: 'Спортивный симулятор', indie: 'Инди', horror: 'Хоррор',
-  };
   const tagsByGenre = {
     shooter: ['Экшен', 'От первого лица', 'Мультиплеер', 'Соревновательный'],
     strategy: ['Пошаговая', 'Реалтайм', 'Управление ресурсами', 'Глубокая тактика'],
@@ -1891,20 +2342,19 @@ function gameDetails(g, idx) {
     horror: ['Атмосфера', 'Скримеры', 'Сюжет', 'Напряжение'],
   };
   const ageByGenre = { shooter: '16+', strategy: '10+', rpg: '16+', survival: '18+', sandbox: '7+', sport: '3+', indie: '12+', horror: '18+' };
-  const os = ['Windows 10 64-bit', 'Windows 11 64-bit'];
   return {
-    genre: genreMap[g.cat] || 'Игра',
+    genre: t('cat_' + g.cat) || t('gd_genre'),
     developer: dev,
     publisher: pub,
     release: `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`,
     age: ageByGenre[g.cat] || '12+',
-    online: (idx % 3 === 0) ? '50 000+ игроков' : 'Синглплеер',
+    online: (idx % 3 === 0) ? t('gd_online_multi') : t('gd_online_single'),
     rating: ratings[idx % ratings.length],
-    reviews: reviews.toLocaleString('ru-RU'),
-    tags: tagsByGenre[g.cat] || ['Увлекательная', 'Качественная'],
-    languages: 'Русский, English, Deutsch, Français, Español, 中文, 日本語, Português',
-    minReq: `ОС: ${os[0]} · Процессор: Intel Core i3-8100 / AMD Ryzen 3 1200 · ОЗУ: 8 ГБ · Видеокарта: NVIDIA GTX 960 / AMD R9 380 · DirectX 11 · 30 ГБ на диске`,
-    recReq: `ОС: ${os[1]} · Процессор: Intel Core i7-9700K / AMD Ryzen 5 3600 · ОЗУ: 16 ГБ · Видеокарта: NVIDIA RTX 2060 / AMD RX 5700 · DirectX 12 · 30 ГБ SSD`,
+    reviews: reviews.toLocaleString(currentLanguage === 'zh' ? 'zh-CN' : currentLanguage === 'en' ? 'en-US' : 'ru-RU'),
+    tags: tagsByGenre[g.cat] || [t('gd_specs')],
+    languages: t('gd_lang_list'),
+    minReq: t('gd_minreq_text'),
+    recReq: t('gd_recreq_text'),
   };
 }
 
@@ -2140,9 +2590,9 @@ function updateFeeProgress(amount) {
     const nextTier = amount < 2000 ? 2000 : amount < 3000 ? 3000 : amount < 5000 ? 5000 : amount < 7500 ? 7500 : amount < 15000 ? 15000 : 0;
     if (nextTier > 0) {
       const need = nextTier - amount;
-      labelEl.innerHTML = 'Ещё ' + need + ' ₽ чтобы уменьшить комиссию';
+      labelEl.innerHTML = (t('fee_progress_need') || 'Ещё {AMOUNT} ₽ чтобы уменьшить комиссию').replace('{AMOUNT}', need);
     } else {
-      labelEl.innerHTML = 'Минимальная комиссия!';
+      labelEl.innerHTML = t('fee_progress_min') || 'Минимальная комиссия!';
     }
   }
 }
@@ -2155,16 +2605,16 @@ function submitTopup() {
   const amount = parseFloat(amountEl.value) || 0;
   const login = loginEl.value.trim();
   if (amount <= 0) {
-    showToast('⚠️ Введите сумму больше 0');
+    showToast(t('toast_amount_zero'));
     return;
   }
   if (!login) {
-    showToast('⚠️ Введите логин аккаунта');
+    showToast(t('toast_login_empty'));
     return;
   }
   const total = Math.round(amount * (1 + TOPUP_COMMISSION));
-  showToast(`✅ Заявка на пополнение ${total} ₽ создана!`);
-  addNotification('💳', 'Пополнение сервисов', `Заявка на ${total} ₽ для "${login}" принята`, 'bonus');
+  showToast(t('toast_topup_created') + total + ' ₽!');
+  addNotification('💳', t('notif_topup'), t('notif_topup_text') + total + ' ₽ для "' + login + '" принята', 'bonus');
 }
 
 /** Инициализация блока пополнения */
@@ -2291,7 +2741,7 @@ function submitPayment() {
   // Проверка логина
   const loginEl = document.getElementById('topupLogin');
   if (!loginEl || !loginEl.value.trim()) {
-    showToast('⚠️ Введите логин аккаунта Steam');
+    showToast(t('toast_login_steam'));
     if (loginEl) {
       loginEl.focus();
       loginEl.classList.add('input-error');
@@ -2309,11 +2759,11 @@ function submitPayment() {
   const rules = document.getElementById('legalRules');
   const promo = document.getElementById('payPromo');
   if (agree && !agree.checked) {
-    showToast('⚠️ Подтвердите согласие с офертой об оказании услуг');
+    showToast(t('toast_agree_offer'));
     return;
   }
   if (rules && !rules.checked) {
-    showToast('⚠️ Подтвердите, что ознакомлены с правилами оплаты и условиями возврата');
+    showToast(t('toast_agree_rules'));
     return;
   }
   const method = getSelectedPayMethod();
@@ -2328,8 +2778,8 @@ function submitPayment() {
     return;
   }
   const promoText = promo && promo.value ? promo.value.trim() : 'без промокода';
-  showToast('✅ Заявка на оплату создана (' + promoText + ')');
-  addNotification('💳', 'Оплата', 'Заявка на оплату принята', 'bonus');
+  showToast(t('toast_pay_created') + promoText + ')');
+  addNotification('💳', t('notif_pay'), t('notif_pay_text'), 'bonus');
 }
 
 /** Открыть окно оплаты через СБП с QR-кодом */
@@ -2489,30 +2939,30 @@ function processCardPayment() {
   const holder = document.getElementById('cardHolder');
   // Валидация
   if (!num || num.value.replace(/\s/g, '').length !== 16) {
-    showToast('⚠️ Введите корректный номер карты (16 цифр)');
+    showToast(t('toast_card_num'));
     if (num) num.focus();
     return;
   }
   if (!exp || exp.value.length !== 5) {
-    showToast('⚠️ Введите срок действия карты (ММ/ГГ)');
+    showToast(t('toast_card_expiry'));
     if (exp) exp.focus();
     return;
   }
   if (!cvv || cvv.value.length !== 3) {
-    showToast('⚠️ Введите CVV-код (3 цифры)');
+    showToast(t('toast_card_cvv'));
     if (cvv) cvv.focus();
     return;
   }
   if (!holder || !holder.value.trim()) {
-    showToast('⚠️ Введите имя держателя карты');
+    showToast(t('toast_card_holder'));
     if (holder) holder.focus();
     return;
   }
   const totalEl = document.getElementById('cardPayTotal');
   const total = totalEl ? totalEl.textContent : '0 ₽';
   closeModal('cardPaymentModal');
-  showToast(`✅ Оплата картой на сумму ${total} прошла успешно!`);
-  addNotification('💳', 'Оплата картой', `Платёж ${total} подтверждён`, 'bonus');
+  showToast(t('toast_pay_ok') + total + ' ' + t('toast_pay_ok_post'));
+  addNotification('💳', t('notif_card_pay'), t('notif_card_pay_text') + total + ' ' + t('notif_card_pay_text_post'), 'bonus');
   createConfetti();
 }
 window.processCardPayment = processCardPayment;
