@@ -250,6 +250,9 @@ function navigateTo(page) {
     if (page === 'profile' && typeof renderProfileLibrary === 'function') {
         try { renderProfileLibrary(); } catch(e){}
     }
+    if (page === 'library' && typeof renderLibrary === 'function') {
+        try { renderLibrary(); } catch(e){}
+    }
     setTimeout(() => {
         isNavigating = false;
     }, 600);
@@ -452,7 +455,7 @@ function toggleFav(el) {
     updateFavoritesUI();
 }
 function updateFavoritesUI() {
-    document.querySelectorAll('.card-fav, .catalog-fav').forEach(el => {
+    document.querySelectorAll('.card-fav, .catalog-fav, .sl-fav, .row-fav').forEach(el => {
         const game = el.dataset.game;
         if (favorites.includes(game)) {
             el.classList.add('active');
@@ -485,13 +488,13 @@ function filterGamesSearch(query) {
     items.forEach(item => {
         const name = (item.getAttribute('data-game') || item.querySelector('h4').textContent).toLowerCase();
         const show = !q || name.includes(q);
-        item.style.display = show ? 'block' : 'none';
+        item.style.display = show ? '' : 'none';
     });
 }
 /** Очистка поиска в каталоге игр */
 function clearGamesSearch() {
     document.getElementById('gamesSearchInput').value = '';
-    document.querySelectorAll('#catalogGrid .catalog-item').forEach(item => item.style.display = 'block');
+    document.querySelectorAll('#catalogGrid .catalog-item').forEach(item => item.style.display = '');
 }
 window.filterGamesSearch = filterGamesSearch;
 window.clearGamesSearch = clearGamesSearch;
@@ -585,7 +588,7 @@ let currentLanguage = localStorage.getItem('siteLanguage') || 'ru';
 const translations = {
     ru: {
         // Навигация
-        'nav_home': 'Главная', 'nav_games': 'Игры', 'nav_vip': 'VIP', 'nav_blog': 'Блог',
+        'nav_home': 'Главная', 'nav_games': 'Игры', 'nav_library': 'Библиотека', 'nav_vip': 'VIP', 'nav_blog': 'Блог',
         'nav_affiliate': 'Партнёры', 'nav_profile': 'Профиль', 'nav_about': 'О нас', 'nav_contacts': 'Контакты',
         'auth_login': 'Войти', 'auth_register': 'Регистрация',
 
@@ -805,12 +808,69 @@ const translations = {
         'qr_expires': 'Срок действия кода:', 'qr_paid': 'Я оплатил', 'qr_cancel': 'Отмена',
         'chat_title': '💬 Поддержка', 'chat_greeting': '👋 Здравствуйте! Чем я могу вам помочь?',
 
+        // Календарь
+        'cal_badge': 'НОВИНКА',
+        'cal_title': 'Ваш личный календарь',
+        'cal_subtitle': 'Персонализированный список новых и готовящихся к выходу игр',
+        'cal_explore': 'Explore more',
+
+        // Профиль (Steam-стиль)
+        'sp_level': 'Уровень',
+        'sp_badge_title': 'Выслуга лет',
+        'sp_badge_xp': '400 ед. опыта',
+        'sp_edit': 'Редактировать профиль',
+        'sp_showcase': 'Витрина достижений',
+        'sp_ach': 'Достижения',
+        'sp_perfect_games': 'Идеальных игр',
+        'sp_avg_ach': 'Ср. процент достижений за игру',
+        'sp_started': 'Запущенные игры',
+        'sp_sessions': 'Сессии',
+        'sp_new_games': 'Новые игры',
+        'sp_fav_game': 'Любимая игра',
+        'sp_hours_played': 'Часов сыграно',
+        'sp_ach_count': 'Достижений',
+        'sp_ach_progress': 'Достижения 57 из 57',
+        'sp_review': '👍 Обзор 1',
+        'sp_recent_activity': 'Недавняя активность',
+        'sp_recent_hours': '31,3 ч. за последние 2 недели',
+        'sp_total_hours': '623 ч. всего',
+        'sp_last_launch': 'последний запуск {DATE}',
+        'sp_ach_recent': 'Достижения 13 из 64',
+        'sp_recent_links': 'Все недавно запущенные | Список желаемого | Обзоры',
+        'sp_comments': 'Комментарии',
+        'sp_subscribe': 'Подписаться ({N})',
+        'sp_online': 'В сети',
+        'sp_badges': 'Значки 13',
+        'sp_games': 'Игры',
+        'sp_inventory': 'Инвентарь',
+        'sp_screenshots': 'Скриншоты',
+        'sp_video': 'Видео',
+        'sp_workshop': 'Работы в мастерской',
+        'sp_reviews': 'Обзоры',
+        'sp_guides': 'Руководства',
+        'sp_artwork': 'Иллюстрации',
+        'sp_friends': 'Друзья 18',
+        'sp_online_now': 'В сети',
+        'sp_online_days': 'В сети: {N} дн. назад',
+
+        // Библиотека
+        'lib_select': 'Игры и Программы',
+        'lib_search_ph': 'Поиск по библиотеке...',
+        'lib_whats_new': 'Что нового',
+        'lib_recent': 'Недавние игры',
+        'lib_suggest': 'Во что поиграть?',
+        'lib_suggest_sub': 'В эти игры вы ещё не играли, но они нравятся похожим на вас игрокам',
+        'lib_all_games': 'Все игры ',
+        'lib_sort': 'СОРТИРОВКА',
+        'lib_asc': 'По алфавиту',
+        'lib_desc': 'Обратный',
+
         // Кнопка темы
         'theme_toggle_title': 'Тёмная/светлая тема', 'theme_customize_title': 'Сменить тему',
     },
     en: {
         // Navigation
-        'nav_home': 'Home', 'nav_games': 'Games', 'nav_vip': 'VIP', 'nav_blog': 'Blog',
+        'nav_home': 'Home', 'nav_games': 'Games', 'nav_library': 'Library', 'nav_vip': 'VIP', 'nav_blog': 'Blog',
         'nav_affiliate': 'Affiliate', 'nav_profile': 'Profile', 'nav_about': 'About', 'nav_contacts': 'Contacts',
         'auth_login': 'Login', 'auth_register': 'Register',
 
@@ -951,7 +1011,7 @@ const translations = {
 
         // Profile
         'profile_breadcrumb': 'Profile', 'profile_name': 'Player', 'profile_level': 'Level 12',
-        'profile_online': 'Online',
+        'profile_online': 'Online', 'profile_online_dot': 'Online',
         'profile_overview': 'Overview', 'profile_country': 'Country', 'profile_country_val': '🇷🇺 Russia',
         'profile_reg': 'Registered', 'profile_reg_val': 'March 15, 2024',
         'profile_steam_level': 'Steam Level', 'profile_time': 'Time in games', 'profile_hours': '342 h',
@@ -1030,12 +1090,69 @@ const translations = {
         'qr_expires': 'Code expires in:', 'qr_paid': 'I paid', 'qr_cancel': 'Cancel',
         'chat_title': '💬 Support', 'chat_greeting': '👋 Hello! How can I help you?',
 
+        // Calendar
+        'cal_badge': 'NEW',
+        'cal_title': 'Your personal calendar',
+        'cal_subtitle': 'Personalized list of new and upcoming games',
+        'cal_explore': 'Explore more',
+
+        // Profile (Steam-style)
+        'sp_level': 'Level',
+        'sp_badge_title': 'Years of service',
+        'sp_badge_xp': '400 XP',
+        'sp_edit': 'Edit profile',
+        'sp_showcase': 'Achievement showcase',
+        'sp_ach': 'Achievements',
+        'sp_perfect_games': 'Perfect games',
+        'sp_avg_ach': 'Average achievement completion',
+        'sp_started': 'Games launched',
+        'sp_sessions': 'Sessions',
+        'sp_new_games': 'New games',
+        'sp_fav_game': 'Favorite game',
+        'sp_hours_played': 'Hours played',
+        'sp_ach_count': 'Achievements',
+        'sp_ach_progress': '57 of 57 achievements',
+        'sp_review': '👍 1 review',
+        'sp_recent_activity': 'Recent activity',
+        'sp_recent_hours': '31.3 h in the last 2 weeks',
+        'sp_total_hours': '623 h total',
+        'sp_last_launch': 'last launch {DATE}',
+        'sp_ach_recent': '13 of 64 achievements',
+        'sp_recent_links': 'All recently launched | Wishlist | Reviews',
+        'sp_comments': 'Comments',
+        'sp_subscribe': 'Subscribe ({N})',
+        'sp_online': 'Online',
+        'sp_badges': '13 badges',
+        'sp_games': 'Games',
+        'sp_inventory': 'Inventory',
+        'sp_screenshots': 'Screenshots',
+        'sp_video': 'Video',
+        'sp_workshop': 'Workshop items',
+        'sp_reviews': 'Reviews',
+        'sp_guides': 'Guides',
+        'sp_artwork': 'Artwork',
+        'sp_friends': '18 friends',
+        'sp_online_now': 'Online',
+        'sp_online_days': 'Online: {N} days ago',
+
+        // Library
+        'lib_select': 'Games and Software',
+        'lib_search_ph': 'Search the library...',
+        'lib_whats_new': 'What\'s new',
+        'lib_recent': 'Recent games',
+        'lib_suggest': 'What to play?',
+        'lib_suggest_sub': 'You haven\'t played these games yet, but players like you enjoy them',
+        'lib_all_games': 'All games ',
+        'lib_sort': 'SORT BY',
+        'lib_asc': 'Alphabetical',
+        'lib_desc': 'Reverse',
+
         // Theme button
         'theme_toggle_title': 'Dark/light theme', 'theme_customize_title': 'Change theme',
     },
     zh: {
         // 导航
-        'nav_home': '首页', 'nav_games': '游戏', 'nav_vip': 'VIP', 'nav_blog': '博客',
+        'nav_home': '首页', 'nav_games': '游戏', 'nav_library': '游戏库', 'nav_vip': 'VIP', 'nav_blog': '博客',
         'nav_affiliate': '合作伙伴', 'nav_profile': '个人资料', 'nav_about': '关于我们', 'nav_contacts': '联系方式',
         'auth_login': '登录', 'auth_register': '注册',
 
@@ -1176,7 +1293,7 @@ const translations = {
 
         // 个人资料
         'profile_breadcrumb': '个人资料', 'profile_name': '玩家', 'profile_level': '12级',
-        'profile_online': '在线',
+        'profile_online': '在线', 'profile_online_dot': '在线',
         'profile_overview': '概览', 'profile_country': '国家', 'profile_country_val': '🇷🇺 俄罗斯',
         'profile_reg': '注册日期', 'profile_reg_val': '2024年3月15日',
         'profile_steam_level': 'Steam等级', 'profile_time': '游戏时间', 'profile_hours': '342小时',
@@ -1254,6 +1371,63 @@ const translations = {
         'qr_scan': '在银行应用中扫描二维码',
         'qr_expires': '验证码有效期：', 'qr_paid': '我已支付', 'qr_cancel': '取消',
         'chat_title': '💬 支持', 'chat_greeting': '👋 您好！我能帮您什么？',
+
+        // 日历
+        'cal_badge': '新品',
+        'cal_title': '您的个人日历',
+        'cal_subtitle': '个性化新游戏和即将推出游戏的列表',
+        'cal_explore': '探索更多',
+
+        // 个人资料 (Steam风格)
+        'sp_level': '等级',
+        'sp_badge_title': '工龄',
+        'sp_badge_xp': '400经验值',
+        'sp_edit': '编辑个人资料',
+        'sp_showcase': '成就展示',
+        'sp_ach': '成就',
+        'sp_perfect_games': '完美游戏',
+        'sp_avg_ach': '平均成就完成率',
+        'sp_started': '已启动游戏',
+        'sp_sessions': '游戏会话',
+        'sp_new_games': '新游戏',
+        'sp_fav_game': '最喜爱的游戏',
+        'sp_hours_played': '游戏时长',
+        'sp_ach_count': '成就',
+        'sp_ach_progress': '57/57个成就',
+        'sp_review': '👍 1条评测',
+        'sp_recent_activity': '最近活动',
+        'sp_recent_hours': '最近2周 31.3小时',
+        'sp_total_hours': '共623小时',
+        'sp_last_launch': '最近启动 {DATE}',
+        'sp_ach_recent': '64个成就中的13个',
+        'sp_recent_links': '所有最近启动 | 愿望单 | 评测',
+        'sp_comments': '评论',
+        'sp_subscribe': '订阅 ({N})',
+        'sp_online': '在线',
+        'sp_badges': '13个徽章',
+        'sp_games': '游戏',
+        'sp_inventory': '库存',
+        'sp_screenshots': '截图',
+        'sp_video': '视频',
+        'sp_workshop': '创意工坊物品',
+        'sp_reviews': '评测',
+        'sp_guides': '指南',
+        'sp_artwork': '艺术作品',
+        'sp_friends': '18个好友',
+        'sp_online_now': '在线',
+        'sp_online_days': '在线：{N}天前',
+
+        // 游戏库
+        'lib_select': '游戏和软件',
+        'lib_search_ph': '搜索游戏库...',
+        'lib_whats_new': '最新动态',
+        'lib_recent': '最近游戏',
+        'lib_suggest': '玩什么？',
+        'lib_suggest_sub': '您还没有玩过这些游戏，但和您相似的玩家喜欢它们',
+        'lib_all_games': '所有游戏 ',
+        'lib_sort': '排序',
+        'lib_asc': '按字母顺序',
+        'lib_desc': '反向',
 
         // 主题按钮
         'theme_toggle_title': '深色/浅色主题', 'theme_customize_title': '更换主题',
@@ -2003,27 +2177,31 @@ window.initTopMarquee = initTopMarquee;
 function renderCatalog() {
   const grid = document.getElementById('catalogGrid');
   if (!grid || typeof GAMES === 'undefined' || !GAMES.length) return;
+  grid.classList.add('steam-list');
   grid.innerHTML = GAMES.map((g, idx) => {
     const p = gamePrice(g, idx);
+    const d = gameDetails(g, idx);
     const priceHtml = p.discount > 0
       ? `<span class="price-discount">-${p.discount}%</span><span class="price-original">${p.original} ₽</span><span class="price-current">${p.price} ₽</span>`
       : `<span class="price-current">${p.price} ₽</span>`;
-    return `<div class="catalog-item" data-type="${g.cat}" data-game="${g.name}" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')">
-       <div class="icon"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy"></div>
-       <h4>${g.name}</h4>
-       <span class="cat-badge">${gameCatLabel(g)}</span>
-       <div class="catalog-rating">★★★★☆</div>
-       <div class="catalog-price">${priceHtml}</div>
-       <button class="catalog-buy" onclick="event.stopPropagation();buyGame('${g.name.replace(/'/g, "\\'")}')">Купить</button>
-       <button class="catalog-fav" onclick="event.stopPropagation();toggleFav(this)" data-game="${g.name}">♡</button>
-       <div class="catalog-tooltip">${gameDescription(g)}</div>
-     </div>`;
+    return `<div class="catalog-item steam-row" data-type="${g.cat}" data-game="${g.name}" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')">
+      <div class="row-img"><img src="${gameImg(g)}" alt="${g.name}" loading="lazy"></div>
+      <div class="row-info">
+        <h4>${g.name}</h4>
+        <p class="row-desc">${gameDescription(g)} Особенности: ${d.tags.join(', ')}.</p>
+        <span class="row-date">${t('gd_release')}: ${d.release}</span>
+      </div>
+      <div class="row-price">${priceHtml}</div>
+      <button class="row-fav" data-game="${g.name}" onclick="event.stopPropagation();toggleFav(this)">♡</button>
+    </div>`;
   }).join('');
 }
+window.renderCatalog = renderCatalog;
 
 function filterGames(type, btn) {
   if (btn) {
-    document.querySelectorAll('.catalog-filters button').forEach(b => b.classList.remove('active'));
+    // Снимаем active со всех элементов фильтра (кнопки и genre-card)
+    document.querySelectorAll('.catalog-filters button, .genre-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
   document.querySelectorAll('#catalogGrid .catalog-item').forEach(item => {
@@ -2061,6 +2239,7 @@ function renderAllGames() {
   try { renderHeroGames(); } catch (e) { console.warn('hero err', e); }
   try { renderTopGames(); } catch (e) { console.warn('top err', e); }
   try { renderCatalog(); } catch (e) { console.warn('catalog err', e); }
+  try { renderLibrary(); } catch (e) { console.warn('library err', e); }
 }
 
 // Перехват DOMContentLoaded: запуск новых рендеров после текущей инициализации
@@ -2847,4 +3026,203 @@ function initResponsiveScale() {
   window.addEventListener('resize', applyScale);
 }
 window.initResponsiveScale = initResponsiveScale;
+
+// ================================================================
+// ЛИЧНЫЙ КАЛЕНДАРЬ (Steam New & Upcoming)
+// ================================================================
+(function(){
+function init(){
+  const track=document.getElementById('calTrack'),dotsBox=document.getElementById('calDots'),next=document.getElementById('calNext'),prev=document.getElementById('calPrev');
+  if(!track||typeof GAMES==='undefined'||!GAMES.length)return;
+  const WD=['ПН','ВТ','СР','ЧТ','ПТ'],EXTRA=[0,2,0,1,0];
+  const REPEAT=4; // 4 итерации прокрутки
+  const now=new Date(),mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  let html='';
+  for(let r=0;r<REPEAT;r++){
+    WD.forEach((wd,i)=>{
+      // Каждая неделя — смещение на +7 дней от предыдущей
+      const dayIdx=r*5+i;
+      const dt=new Date(mon);dt.setDate(mon.getDate()+dayIdx);
+      const label=String(dt.getDate()).padStart(2,'0')+'.'+String(dt.getMonth()+1).padStart(2,'0');
+      // Уникальные обложки для каждого дня (сдвиг по индексу)
+      const a=GAMES[(dayIdx*3)%GAMES.length],b=GAMES[(dayIdx*3+1)%GAMES.length];
+      html+=`<div class="cal-day">
+        <div class="cal-day-head"><span>${wd}</span><b>${label}</b></div>
+        <img src="${gameImg(a)}" alt="${a.name}" loading="lazy" onclick="openGameDetail('${a.name.replace(/'/g,"\\'")}')">
+        <img src="${gameImg(b)}" alt="${b.name}" loading="lazy" onclick="openGameDetail('${b.name.replace(/'/g,"\\'")}')">
+        ${EXTRA[i]?`<div class="cal-more">и ещё ${EXTRA[i]}</div>`:''}
+      </div>`;
+    });
+  }
+  track.innerHTML=html;
+  function updNav(){
+    // Ровно REPEAT прокруток (4), значит ровно 4 точки
+    const pages=REPEAT;
+    const idx=Math.min(pages-1,Math.max(0,Math.round(track.scrollLeft/(track.clientWidth||1))));
+    // Точки-пагинация (по количеству прокруток)
+    if(dotsBox.children.length!==pages){
+      dotsBox.innerHTML=Array.from({length:pages},(_,i)=>`<span data-i="${i}"></span>`).join('');
+    }
+    [...dotsBox.children].forEach((s,i)=>s.classList.toggle('active',i===idx));
+    // Стрелки: прячем у краёв
+    if(prev)prev.classList.toggle('hidden',idx<=0);
+    if(next)next.classList.toggle('hidden',idx>=pages-1);
+  }
+  track.addEventListener('scroll',updNav);
+  dotsBox.addEventListener('click',e=>{const s=e.target.closest('span');if(s)track.scrollTo({left:+s.dataset.i*track.clientWidth,behavior:'smooth'});});
+  if(next)next.addEventListener('click',()=>track.scrollBy({left:track.clientWidth,behavior:'smooth'}));
+  if(prev)prev.addEventListener('click',()=>track.scrollBy({left:-track.clientWidth,behavior:'smooth'}));
+  window.addEventListener('resize',updNav);
+  updNav();
+}
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+})();
+
+// ================================================================
+// ЛЕНТА ВЫБОРА ЖАНРА — картинки-обложки (страница «Игры»)
+// ================================================================
+(function(){
+function initGenreCarousel(){
+  const track=document.getElementById('genreTrack');
+  if(!track||typeof GAMES==='undefined'||!GAMES.length)return;
+  // Жанры с переводом и порядком: сначала «Все», затем остальные
+  const genres=[
+    {key:'all',label:translations[currentLanguage]?translations[currentLanguage]['filter_all']:'Все'},
+    {key:'shooter',label:translations[currentLanguage]?translations[currentLanguage]['filter_shooter']:'Шутеры'},
+    {key:'strategy',label:translations[currentLanguage]?translations[currentLanguage]['filter_strategy']:'Стратегии'},
+    {key:'rpg',label:translations[currentLanguage]?translations[currentLanguage]['filter_rpg']:'RPG'},
+    {key:'survival',label:translations[currentLanguage]?translations[currentLanguage]['filter_survival']:'Выживание'},
+    {key:'sandbox',label:translations[currentLanguage]?translations[currentLanguage]['filter_sandbox']:'Песочницы'},
+    {key:'sport',label:translations[currentLanguage]?translations[currentLanguage]['filter_sport']:'Спорт'},
+    {key:'indie',label:translations[currentLanguage]?translations[currentLanguage]['filter_indie']:'Инди'},
+    {key:'horror',label:translations[currentLanguage]?translations[currentLanguage]['filter_horror']:'Хоррор'}
+  ];
+  // Представительная узнаваемая игра для каждого жанра (по имени файла)
+  function coverFor(key){
+    const byImg={
+      all:'7_days_to_die.jpg',
+      shooter:'apex_legends.jpg',
+      strategy:'age_of_empires_4.jpg',
+      rpg:'baldurs_gate_3.jpg',
+      survival:'dayz.jpg',
+      sandbox:'beamng_drive.jpg',
+      sport:'assetto_corsa.jpg',
+      indie:'celeste.jpg',
+      horror:'alien_isolation.jpg'
+    };
+    // Ищем игру по имени файла, иначе — первую игру жанра
+    const g=GAMES.find(x=>x.img===byImg[key])||GAMES.find(x=>x.cat===key)||GAMES[0];
+    return gameImg(g);
+  }
+  track.innerHTML=genres.map((gr,i)=>{
+    const img=coverFor(gr.key);
+    const active=i===0?'active':'';
+    return `<div class="genre-card ${active}" data-genre="${gr.key}" onclick="filterGames('${gr.key}', this)">
+      <img src="${img}" alt="${gr.label}" loading="lazy">
+      <div class="genre-label">${gr.label}</div>
+    </div>`;
+  }).join('');
+  const prev=document.getElementById('gPrev'),next=document.getElementById('gNext');
+  const step=()=>Math.max(150, Math.round(track.clientWidth*0.7));
+  if(prev)prev.addEventListener('click',()=>track.scrollBy({left:-step(),behavior:'smooth'}));
+  if(next)next.addEventListener('click',()=>track.scrollBy({left: step(),behavior:'smooth'}));
+}
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',initGenreCarousel):initGenreCarousel();
+})();
+
+// ================================================================
+// БИБЛИОТЕКА (страница «Библиотека»)
+// ================================================================
+let libSort = 'asc';
+function libCard(g, overlay){
+  return `<div class="lib-card${overlay?'':''}" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')">
+    <img src="${gameImg(g)}" alt="${g.name}" loading="lazy">
+    ${overlay||''}
+  </div>`;
+}
+function libWideCard(g, dateLabel, title, gameName){
+  return `<div class="lib-card wide" onclick="openGameDetail('${g.name.replace(/'/g, "\\'")}')">
+    <img src="${gameImg(g)}" alt="${g.name}" loading="lazy">
+    <div class="lib-date">${dateLabel}</div>
+    <div class="lib-news-title">${title||g.name}</div>
+    <div class="lib-news-chip">${g.name}</div>
+  </div>`;
+}
+function renderLibrary(){
+  const listEl=document.getElementById('libList');
+  const gridEl=document.getElementById('libGrid');
+  const recentEl=document.getElementById('libRecent');
+  const newsEl=document.getElementById('libWhatsNew');
+  const suggestEl=document.getElementById('libSuggest');
+  const countEl=document.getElementById('libCount');
+  if(typeof GAMES==='undefined'||!GAMES.length)return;
+
+  // Алфавитный список (сайдбар)
+  const sorted=[...GAMES].sort((a,b)=>a.name.localeCompare(b.name));
+  if(listEl){
+    listEl.innerHTML=sorted.map(g=>`<div class="lib-list-item" onclick="openGameDetail('${g.name.replace(/'/g,"\\'")}')">
+      <img src="${gameImg(g)}" alt=""><span>${g.name}</span>
+    </div>`).join('');
+  }
+  // Сетка «Все игры»
+  if(gridEl) renderLibGrid(sorted);
+  if(countEl) countEl.textContent=GAMES.length;
+
+  // Недавние игры — 6 штук, у первой оверлей «ВЫ ИГРАЛИ»
+  if(recentEl){
+    const recent=GAMES.slice(0,6);
+    recentEl.innerHTML=recent.map((g,i)=>{
+      if(i===0){
+        const mins=Math.floor(Math.random()*400+60);
+        const total=Math.floor(Math.random()*2000+500);
+        const ov=`<div class="lib-overlay"><strong>ВЫ ИГРАЛИ</strong><br>${mins} мин. за последние две недели / ${total} мин. всего</div>`;
+        return libCard(g,ov);
+      }
+      return libCard(g);
+    }).join('');
+  }
+  // Что нового — 4 широких карточки
+  if(newsEl){
+    const dates=['Вчера','на этой неделе','август','июль'];
+    const newsGames=GAMES.slice(40,44);
+    newsEl.innerHTML=newsGames.map((g,i)=>libWideCard(g,dates[i]||'',g.name,'')).join('');
+  }
+  // Во что поиграть? — рекомендации, у первой «САМЫЕ ПОПУЛЯРНЫЕ»
+  if(suggestEl){
+    const suggest=GAMES.slice(32,36);
+    suggestEl.innerHTML=suggest.map((g,i)=>{
+      if(i===0){
+        const ov=`<div class="lib-overlay">САМЫЕ ПОПУЛЯРНЫЕ<br>среди игроков, похожих на вас</div>`;
+        return libCard(g,ov);
+      }
+      return libCard(g);
+    }).join('');
+  }
+}
+function renderLibGrid(list){
+  const gridEl=document.getElementById('libGrid');
+  if(!gridEl)return;
+  const arr=[...list];
+  if(libSort==='desc') arr.reverse();
+  gridEl.innerHTML=arr.map(g=>libCard(g)).join('');
+}
+function filterLibrary(q){
+  const query=(q||'').trim().toLowerCase();
+  const listEl=document.getElementById('libList');
+  const all=typeof GAMES==='undefined'?[]:[...GAMES].sort((a,b)=>a.name.localeCompare(b.name));
+  if(listEl){
+    listEl.innerHTML=all.filter(g=>g.name.toLowerCase().includes(query)).map(g=>`<div class="lib-list-item" onclick="openGameDetail('${g.name.replace(/'/g,"\\'")}')">
+      <img src="${gameImg(g)}" alt=""><span>${g.name}</span>
+    </div>`).join('');
+  }
+  renderLibGrid(all.filter(g=>g.name.toLowerCase().includes(query)));
+}
+function sortLibrary(v){
+  libSort=v;
+  const all=typeof GAMES==='undefined'?[]:[...GAMES].sort((a,b)=>a.name.localeCompare(b.name));
+  renderLibGrid(all);
+}
+window.renderLibrary=renderLibrary;
+window.filterLibrary=filterLibrary;
+window.sortLibrary=sortLibrary;
 
