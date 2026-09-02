@@ -6162,4 +6162,63 @@ body.light-theme .pay-section .pay-legal span { color: rgba(255, 255, 255, 0.8) 
   .lib-card{flex-basis:100px}
 }
 
+/* ================================================================
+   ПРОИЗВОДИТЕЛЬНОСТЬ ДЛЯ МОБИЛЬНЫХ — максимальная оптимизация
+   с минимальной потерей качества (добавлено отдельным блоком)
+   ================================================================ */
+@media (max-width: 820px) {
+    /* Отключаем все тяжёлые фоновые анимации */
+    body::before, body::after { animation: none !important; }
+    .hero::before, .hero::after { animation: none !important; }
+    .cover-ribbons .ribbon { animation: none !important; }
+    /* Отключаем marquee-прокрутку топ-игр и лент — статичные, но быстрые */
+    .games-slider-track.marquee-mode .games-marquee { animation: none !important; overflow-x: auto; }
+    .ribbon { animation: none !important; }
+    /* Снижаем/убираем backdrop-filter на всех карточках и панелях */
+    .header, .header.header-scrolled,
+    .modal-content, .form-box, .steam-banner, .topup-section, .pay-section,
+    .game-card, .catalog-item, .steam-row, .stat-card, .value-card,
+    .vip-card, .promo-card, .blog-card, .news-alt-card, .feature-article,
+    .chat-widget .chat-window, .scroll-top, .theme-toggle, .theme-customizer,
+    .profile-card, .sp-panel, .lib-sidebar, .cal-section, .cal-day,
+    .notification-item, .toast, .pwa-banner, .cookie-banner, .notif-permission {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    /* Убираем декоративные тени-свечения (дорогие blur в box-shadow) */
+    .game-card, .catalog-item, .vip-card, .promo-card, .news-alt-card {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25) !important;
+    }
+    /* Останавливаем бесконечные пульсации и свечения */
+    .hero-text .badge, .logo, .online-dot, .chat-button .online-dot,
+    .skeletonLoader .loader-logo, #skeletonLoader .crown,
+    #skeletonLoader .loader-text, #skeletonLoader .loader-bar .fill,
+    #skeletonLoader .loader-sub, .voice-search-btn.recording,
+    .voice-recording-indicator .dot, .voice-recording-indicator .wave span {
+        animation: none !important;
+    }
+    /* Отключаем hover-трансформации подъёма карточек (GPU-heavy) */
+    .game-card:hover, .catalog-item:hover, .steam-row:hover,
+    .vip-card:hover, .promo-card:hover, .news-alt-card:hover {
+        transform: none !important;
+    }
+    /* Упрощаем переходы */
+    .game-card, .catalog-item, .promo-card, .news-alt-card,
+    .steam-row, .lib-card, .genre-card {
+        transition: background-color 0.15s ease !important;
+    }
+    /* Confetti и canvas фоны — offscreen, не пересчитываем */
+    #confettiCanvas, #particlesCanvas { display: none !important; }
+    /* Content-visibility для секций ниже — пропуск рендера */
+    .section, .sp-panel, .lib-section, .cal-section, .news-alt-card {
+        content-visibility: auto;
+        contain-intrinsic-size: 500px;
+    }
+}
+@media (max-width: 480px) {
+    /* На телефонах ещё сильнее упрощаем */
+    .cover-ribbons { opacity: 0.06 !important; }
+    .hero-games img, .top-game-card .cover img { will-change: auto !important; }
+}
+
 
